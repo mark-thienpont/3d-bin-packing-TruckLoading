@@ -1,6 +1,15 @@
 [![Open in Leap IDE](https://cdn-assets.cloud.dwavesys.com/shared/latest/badges/leapide.svg)](https://ide.dwavesys.io/#https://github.com/dwave-examples/3d-bin-packing) 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/dwave-examples/3d-bin-packing/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/dwave-examples/3d-bin-packing/tree/main)
 
+# 3D Bin Packing 4 Truck Loading
+
+This code extends the original DWave coding to conform the use-case at Unilin Flooring Truck Loading :
+- add 'weight' to the picture
+- add weight-distribution, including maximum weight on front and back
+- add safety- and product-quality constraints
+etc.
+
+
 # 3D Bin Packing
 
 Three-dimensional bin packing [[1]](#Martello) is an 
