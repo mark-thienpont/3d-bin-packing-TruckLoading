@@ -195,24 +195,23 @@ def read_instance(instance_path: str) -> dict:
 
     """
 
-    data = {"num_bins": 0, "bin_dimensions": [], "quantity": [], "case_ids": [],
-            "case_length": [], "case_width": [], "case_height": []}
+    data = {"num_bins": 0, "bin_dimensions": [], "target_X": 0, "quantity": [], "case_ids": [],
+            "case_length": [], "case_width": [], "case_height": [], "case_weight": []}
 
     with open(instance_path) as f:
         for i, line in enumerate(f):
+            case_info = list(map(int, line.split()))
             if i == 0:
-                data["num_bins"] = int(line.split()[-1])
-            elif i == 1:
-                data["bin_dimensions"] = [int(i) for i in line.split()[-3:]]
-            elif 2 <= i <= 4:
-                continue
+                data["num_bins"] = case_info[1]
+                data["bin_dimensions"] = [case_info[2], case_info[3], case_info[4]]
+                data["target_X"] = case_info[5]
             else:
-                case_info = list(map(int, line.split()))
                 data["case_ids"].append(case_info[0])
                 data["quantity"].append(case_info[1])
                 data["case_length"].append(case_info[2])
                 data["case_width"].append(case_info[3])
                 data["case_height"].append(case_info[4])
+                data["case_weight"].append(case_info[5])
 
         return data
 
@@ -256,7 +255,7 @@ def write_solution_to_file(solution_file_path: str,
                            if num_bins > 1 else 1
                            for j in range(num_bins))),
                    int(sum((r + 1) * vars.o[i, r].energy(sample) for r in
-                           range(6))),
+                           [0,2])),
                    np.round(vars.x[i].energy(sample), 2),
                    np.round(vars.y[i].energy(sample), 2),
                    np.round(vars.z[i].energy(sample), 2),

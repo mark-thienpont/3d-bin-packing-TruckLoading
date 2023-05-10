@@ -99,11 +99,11 @@ class Variables:
                        for j in range(num_bins)}
 
         self.o = {(i, k): Binary(f'o_{i}_{k}') for i in range(num_cases)
-                  for k in range(6)}
+                  for k in [0,2]}
 
         self.selector = {(i, j, k): Binary(f'sel_{i}_{j}_{k}')
                          for i, j in combinations(range(num_cases), r=2)
-                         for k in range(6)}
+                         for k in [0,2]}
 
 
 def _add_bin_on_constraint(cqm: ConstrainedQuadraticModel, vars: Variables,
@@ -134,12 +134,13 @@ def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
         dy[i] = 0
         dz[i] = 0
         for j, (a, b, c) in enumerate(p1):
-            dx[i] += a * vars.o[i, j]
-            dy[i] += b * vars.o[i, j]
-            dz[i] += c * vars.o[i, j]
+            if (j == 0 or j == 2):      # only rotations around z-axis is potentially feasible in all our cases
+                dx[i] += a * vars.o[i, j]
+                dy[i] += b * vars.o[i, j]
+                dz[i] += c * vars.o[i, j]
 
     for i in range(num_cases):
-        cqm.add_discrete(quicksum([vars.o[i, k] for k in range(6)]),
+        cqm.add_discrete(quicksum([vars.o[i, k] for k in [0,2]]),
                          label=f'orientation_{i}')
     return [dx, dy, dz]
 
@@ -152,7 +153,7 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
     dx, dy, dz = effective_dimensions
 
     for i, k in combinations(range(num_cases), r=2):
-        cqm.add_discrete(quicksum([vars.selector[i, k, s] for s in range(6)]),
+        cqm.add_discrete(quicksum([vars.selector[i, k, s] for s in [0,2]]),
                          label=f'discrete_{i}_{k}')
         for j in range(num_bins):
             cases_on_same_bin = vars.bin_loc[i, j] * vars.bin_loc[k, j]
@@ -162,11 +163,11 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.x[i] + dx[i] - vars.x[k]) <= 0,
                 label=f'overlap_{i}_{k}_{j}_0')
 
-            cqm.add_constraint(
-                -(2 - cases_on_same_bin -
-                  vars.selector[i, k, 1]) * bins.width +
-                (vars.y[i] + dy[i] - vars.y[k]) <= 0,
-                label=f'overlap_{i}_{k}_{j}_1')
+            #cqm.add_constraint(
+            #    -(2 - cases_on_same_bin -
+            #      vars.selector[i, k, 1]) * bins.width +
+            #    (vars.y[i] + dy[i] - vars.y[k]) <= 0,
+            #    label=f'overlap_{i}_{k}_{j}_1')
 
             cqm.add_constraint(
                 -(2 - cases_on_same_bin -
@@ -174,23 +175,23 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.z[i] + dz[i] - vars.z[k]) <= 0,
                 label=f'overlap_{i}_{k}_{j}_2')
 
-            cqm.add_constraint(
-                -(2 - cases_on_same_bin -
-                  vars.selector[i, k, 3]) * num_bins * bins.length +
-                (vars.x[k] + dx[k] - vars.x[i]) <= 0,
-                label=f'overlap_{i}_{k}_{j}_3')
+            #cqm.add_constraint(
+            #    -(2 - cases_on_same_bin -
+            #      vars.selector[i, k, 3]) * num_bins * bins.length +
+            #    (vars.x[k] + dx[k] - vars.x[i]) <= 0,
+            #    label=f'overlap_{i}_{k}_{j}_3')
 
-            cqm.add_constraint(
-                -(2 - cases_on_same_bin -
-                  vars.selector[i, k, 4]) * bins.width +
-                (vars.y[k] + dy[k] - vars.y[i]) <= 0,
-                label=f'overlap_{i}_{k}_{j}_4')
+            #cqm.add_constraint(
+            #    -(2 - cases_on_same_bin -
+            #      vars.selector[i, k, 4]) * bins.width +
+            #    (vars.y[k] + dy[k] - vars.y[i]) <= 0,
+            #    label=f'overlap_{i}_{k}_{j}_4')
 
-            cqm.add_constraint(
-                -(2 - cases_on_same_bin -
-                  vars.selector[i, k, 5]) * bins.height +
-                (vars.z[k] + dz[k] - vars.z[i]) <= 0,
-                label=f'overlap_{i}_{k}_{j}_5')
+            #cqm.add_constraint(
+            #    -(2 - cases_on_same_bin -
+            #      vars.selector[i, k, 5]) * bins.height +
+            #    (vars.z[k] + dz[k] - vars.z[i]) <= 0,
+            #    label=f'overlap_{i}_{k}_{j}_5')
 
     if num_bins > 1:
         for i in range(num_cases):
