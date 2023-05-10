@@ -9,6 +9,8 @@ This code extends the original DWave coding to conform the use-case at Unilin Fl
 - add safety- and product-quality constraints
 etc.
 
+The main idea (to start with) is that the total case-list can always be loaded on a single (container)-truck, as the combined weight is around 90% of the maximum allowed cargo-weight of the intended truck, ánd the volume is never a problem at all.
+
 
 # 3D Bin Packing
 
