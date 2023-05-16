@@ -68,7 +68,7 @@ def _solve_bin_packing_instance(data: dict,
 st.set_page_config(layout="wide")
 
 st.markdown(
-    "<h1 style='text-align: center;'>3D Bin Packing Demo</h1>",
+    "<h1 style='text-align: center;'>Truck Loading Configuration</h1>",
     unsafe_allow_html=True
 )
 
@@ -87,40 +87,22 @@ use_cqm_solver = True
 
 if run_type == "File upload":
     problem_filepath = st.sidebar.text_input(label="Problem instance file",
-                                             value="input/LoadList_835982.csv")
+                                             value="input/LoadList_1.csv")
     time_limit = st.sidebar.number_input(label="Hybrid solver time limit (S)",
                                          value=5)
-    color_coded = st.sidebar.checkbox("Color coded cases")
-    display_input = st.sidebar.checkbox("Display input data")
-    write_to_file = st.sidebar.checkbox("Write solution to file")
-    if write_to_file:
-        solution_filename = st.sidebar.text_input(label="Solution filename", 
-                                                  value = "output/LoadList_835982.csv")
-    else:
-        solution_filename = None
+
+    color_coded = True
+    display_input = False
+    write_to_file = True
+    solution_filename = st.sidebar.text_input(label="Solution filename", 
+                                              value = "output/LoadList_835982.csv")
+
     run_button = st.sidebar.button("Run")
 
-    if display_input:
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            if problem_filepath:
-                with open(problem_filepath) as f:
-                    for line in f:
-                        st.text(line)
-
-        with col2:
-            if run_button:
-                data = read_instance(problem_filepath)
-                _solve_bin_packing_instance(data,
-                                            write_to_file,
-                                            solution_filename,
-                                            use_cqm_solver,
-                                            **{"use_container_width": True})
-    else:
-        if run_button:
-            data = read_instance(problem_filepath)
-            _solve_bin_packing_instance(data,
-                                        write_to_file,
-                                        solution_filename,
-                                        use_cqm_solver,
-                                        **{"use_container_width": True})
+    if run_button:
+        data = read_instance(problem_filepath)
+        _solve_bin_packing_instance(data,
+                                    write_to_file,
+                                    solution_filename,
+                                    use_cqm_solver,
+                                    **{"use_container_width": True})

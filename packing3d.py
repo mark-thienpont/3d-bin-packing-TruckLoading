@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 import argparse
-from dimod import quicksum, ConstrainedQuadraticModel, Real, Binary, SampleSet
+from dimod import quicksum, ConstrainedQuadraticModel, Real, Binary, SampleSet, Integer
 from dwave.system import LeapHybridCQMSampler
 from itertools import combinations, permutations
 import numpy as np
@@ -21,7 +21,7 @@ from typing import Tuple
 
 from utils import print_cqm_stats, plot_cuboids
 from utils import read_instance, write_solution_to_file
-from mip_solver import MIPCQMSolver
+#from mip_solver import MIPCQMSolver
 
 
 class Cases:
@@ -38,6 +38,7 @@ class Cases:
         self.length = np.repeat(data["case_length"], data["quantity"])
         self.width = np.repeat(data["case_width"], data["quantity"])
         self.height = np.repeat(data["case_height"], data["quantity"])
+        self.weight = np.repeat(data["case_weight"], data["quantity"])
         print(f'Number of cases: {self.num_cases}')
 
 
@@ -55,6 +56,7 @@ class Bins:
         self.width = data["bin_dimensions"][1]
         self.height = data["bin_dimensions"][2]
         self.num_bins = data["num_bins"]
+        self.target_X = data["target_X"]
         self.lowest_num_bin = np.ceil(
             np.sum(cases.length * cases.width * cases.height) / (
                     self.length * self.width * self.height))
@@ -78,17 +80,17 @@ class Variables:
     def __init__(self, cases: Cases, bins: Bins):
         num_cases = cases.num_cases
         num_bins = bins.num_bins
-        self.x = {i: Real(f'x_{i}',
+        self.x = {i: Integer(f'x_{i}',
                           lower_bound=0,
                           upper_bound=bins.length * bins.num_bins)
                   for i in range(num_cases)}
-        self.y = {i: Real(f'y_{i}', lower_bound=0, upper_bound=bins.width)
+        self.y = {i: Integer(f'y_{i}', lower_bound=0, upper_bound=bins.width)
                   for i in range(num_cases)}
-        self.z = {i: Real(f'z_{i}', lower_bound=0, upper_bound=bins.height)
+        self.z = {i: Integer(f'z_{i}', lower_bound=0, upper_bound=bins.height)
                   for i in range(num_cases)}
 
         self.bin_height = {
-            j: Real(label=f'upper_bound_{j}', upper_bound=bins.height)
+            j: Integer(label=f'upper_bound_{j}', upper_bound=bins.height)
             for j in range(num_bins)}
 
         self.bin_loc = {
@@ -231,24 +233,21 @@ def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
     num_cases = cases.num_cases
     num_bins = bins.num_bins
     dx, dy, dz = effective_dimensions
+    
+    target_X = bins.target_X
+    target_Y = bins.width / 2
+    target_Z = quicksum(cases.weight[i] * cases.height[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) / 2
 
-    # First term of objective: minimize average height of cases
-    first_obj_term = quicksum(
-        vars.z[i] + dz[i] for i in range(num_cases)) / num_cases
+    obj_COG_X = ((quicksum((vars.x[i] + dx[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_X) ** 2 ) 
+    obj_COG_Y = ((quicksum((vars.y[i] + dy[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_Y) ** 2 ) 
+    obj_COG_Z = ((quicksum((vars.z[i]) * cases.weight[i] for i in range(num_cases)) ** 2 ) / (quicksum(cases.weight[i] for i in range(num_cases))) ** 2 )
 
-    # Second term of objective: minimize height of the case at the top of the
-    # bin
-    second_obj_term = quicksum(vars.bin_height[j] for j in range(num_bins))
-
-    # Third term of the objective:
-    third_obj_term = quicksum(
-        bins.height * vars.bin_on[j] for j in range(num_bins))
     first_obj_coefficient = 1
     second_obj_coefficient = 1
     third_obj_coefficient = 1
-    cqm.set_objective(first_obj_coefficient * first_obj_term +
-                      second_obj_coefficient * second_obj_term +
-                      third_obj_coefficient * third_obj_term)
+    cqm.set_objective(first_obj_coefficient  * obj_COG_X +
+                      second_obj_coefficient * obj_COG_Y +
+                      third_obj_coefficient  * obj_COG_Z)
 
 
 def build_cqm(vars: Variables, bins: Bins,
@@ -315,7 +314,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_filepath", type=str, nargs="?",
                         help="Filename with path to bin-packing data file.",
-                        default="input/sample_data_1.txt")
+                        default="input/LoadList_11.csv")
     
     parser.add_argument("--output_filepath", type=str,  nargs="?",
                         help="Path for the output solution file.",

@@ -19,6 +19,7 @@ import numpy as np
 from tabulate import tabulate
 from typing import List, Optional, TYPE_CHECKING
 import dimod
+from dimod import quicksum
 
 if TYPE_CHECKING:
     from packing3d import Cases, Bins, Variables
@@ -203,14 +204,14 @@ def read_instance(instance_path: str) -> dict:
             case_info = list(map(int, line.split()))
             if i == 0:
                 data["num_bins"] = case_info[1]
-                data["bin_dimensions"] = [case_info[2], case_info[3], case_info[4]]
-                data["target_X"] = case_info[5]
+                data["bin_dimensions"] = [int(round(case_info[2]/10,0)), int(round(case_info[3]/10,0)), int(round(case_info[4]/10,0))]
+                data["target_X"] = int(round(case_info[5]/10,0))
             else:
                 data["case_ids"].append(case_info[0])
                 data["quantity"].append(case_info[1])
-                data["case_length"].append(case_info[2])
-                data["case_width"].append(case_info[3])
-                data["case_height"].append(case_info[4])
+                data["case_length"].append(int(round(case_info[2]/10,0)))
+                data["case_width"].append(int(round(case_info[3]/10,0)))
+                data["case_height"].append(int(round(case_info[4]/10,0)))
                 data["case_weight"].append(case_info[5])
 
         return data
@@ -240,6 +241,12 @@ def write_solution_to_file(solution_file_path: str,
     num_cases = cases.num_cases
     num_bins = bins.num_bins
     dx, dy, dz = effective_dimensions
+
+    # calculated resulting COG_X, COG_Y, and COG_Z
+    COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+    COG_Y = quicksum((vars.y[i].energy(sample) + dy[i].energy(sample)/2 - bins.width / 2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+    COG_Z = quicksum((vars.z[i].energy(sample) + dz[i].energy(sample)/2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+
     if num_bins > 1:
         num_bin_used = sum([vars.bin_on[j].energy(sample)
                             for j in range(num_bins)])
@@ -268,6 +275,10 @@ def write_solution_to_file(solution_file_path: str,
         f.write('# Number of cases packed: ' + str(int(num_cases)) + '\n')
         f.write(
             '# Objective value: ' + str(np.round(objective_value, 3)) + '\n\n')
+        f.write('# COG_X: ' + str(np.round(COG_X, 0)) + '\n')
+        f.write('# COG_Y: ' + str(np.round(COG_Y, 0)) + '\n')
+        f.write('# COG_Z: ' + str(np.round(COG_Z, 0)) + '\n')
+
         f.write(tabulate(vs, headers="firstrow"))
         f.close()
         print(f'Saved solution to '
