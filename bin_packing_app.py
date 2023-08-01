@@ -48,7 +48,6 @@ def _solve_bin_packing_instance(data: dict,
 
     model_variables = Variables(cases, bins)
 
-    ##cqm, effective_dimensions, effective_overlap = build_cqm(model_variables, bins, cases)
     cqm, effective_dimensions = build_cqm(model_variables, bins, cases)
 
     best_feasible = call_solver(cqm, time_limit, use_cqm_solver)
@@ -63,7 +62,7 @@ def _solve_bin_packing_instance(data: dict,
     if write_to_file:
         write_solution_to_file(solution_filename, cqm, 
                                model_variables, best_feasible,
-                               cases, bins, effective_dimensions) ##, effective_overlap)
+                               cases, bins, effective_dimensions) 
 
 
 st.set_page_config(layout="wide")
@@ -76,15 +75,6 @@ st.markdown(
 run_type = "File upload"
 solver_type = "Constrained Quadratic Model"
 use_cqm_solver = True
-
-#solver_type = st.sidebar.radio(label="Choose solver to run problems on:",
-#                               options=["Constrained Quadratic Model",
-#                                        "CBC (Python-MIP)",
-#                                        ])
-#if solver_type == "Constrained Quadratic Model":
-#    use_cqm_solver = True
-#else:
-#    use_cqm_solver = False
 
 if run_type == "File upload":
     problem_filepath = st.sidebar.text_input(label="Problem instance file",

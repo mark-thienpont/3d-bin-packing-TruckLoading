@@ -21,7 +21,6 @@ from typing import Tuple
 
 from utils import print_cqm_stats, plot_cuboids
 from utils import read_instance, write_solution_to_file
-#from mip_solver import MIPCQMSolver
 
 
 class Cases:
@@ -111,24 +110,6 @@ class Variables:
                          for i, j in combinations(range(num_cases), r=2)
                          for k in range(6)}    
 
-        ##self.potential_support = {(i, j, k): Binary(f'potential_support_{i}_{j}_{k}')
-        ##                         for i, j in combinations(range(num_cases), r=2)
-        ##                         for k in [2,5]}           
-
-        ## helper variable to determine 'greater or lower than' in context of 'absolute value' determination
-        ##self.Yxf = {(i, j): Binary(f'Yxf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        ##self.Yxt = {(i, j): Binary(f'Yxt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        ##self.Yyf = {(i, j): Binary(f'Yyf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        ##self.Yyt = {(i, j): Binary(f'Yyt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        ##self.Yzf = {(i, j): Binary(f'Yzf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        ##self.Yzt = {(i, j): Binary(f'Yzt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-
-        ## no relu possible due to error "cannot multiply QM's with interactions"
-        ## helper variable to determine 'relu' in context of 'common xyz' determination
-        #self.Rx = {(i, j): Binary(f'Rx_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        #self.Ry = {(i, j): Binary(f'Ry_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        #self.Rz = {(i, j): Binary(f'Rz_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}       
-
 
 def _add_bin_on_constraint(cqm: ConstrainedQuadraticModel, vars: Variables,
                            bins: Bins, cases: Cases):
@@ -151,6 +132,9 @@ def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
     dx = {}
     dy = {}
     dz = {}
+    x2 = {}
+    y2 = {}
+    z2 = {}
     for i in range(num_cases):
         p1 = list(
             permutations([cases.length[i], cases.width[i], cases.height[i]]))
@@ -162,11 +146,14 @@ def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
                 dx[i] += a * vars.o[i, j]
                 dy[i] += b * vars.o[i, j]
                 dz[i] += c * vars.o[i, j]
+        x2[i] = vars.x[i] + dx[i]
+        y2[i] = vars.y[i] + dy[i]
+        z2[i] = vars.z[i] + dz[i]
 
     for i in range(num_cases):
         cqm.add_discrete(quicksum([vars.o[i, k] for k in [0,2]]),
                          label=f'orientation_{i}')
-    return [dx, dy, dz]
+    return [dx, dy, dz, x2, y2, z2]
 
 
 def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
@@ -174,115 +161,18 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                                effective_dimensions: list):
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    dx, dy, dz = effective_dimensions
-
-    ##common_X = {}
-    ##common_Y = {}
-    ##common_Z = {}
-
-    #common_Xb = {}
-    #common_Yb = {}
-    #common_Zb = {}
-
-    ##max_xf = {}
-    ##min_xt = {}
-    ##max_yf = {}
-    ##min_yt = {}
-    ##max_zf = {}
-    ##min_zt = {}
+    dx, dy, dz, x2, y2, z2 = effective_dimensions
 
     for i, k in combinations(range(num_cases), r=2):
-        #cqm.add_discrete(quicksum([vars.selector[i, k, s] for s in range(6)]),
-        #                 label=f'discrete_{i}_{k}')
         cqm.add_constraint(sum([vars.selector[i,k,s] for s in range(6)]) >= 1,
                          label=f'selector_{i}_{k}')
 
-
-        #### repositioned towards interpretation as 'optional close neighbours' ==> other constraints setup !!
-        ## 2 objects can not be 'left' and 'right' at the same time (same for bottom/top and front/back)
-        #cqm.add_constraint(sum([vars.neighbour[i,k,s] for s in [0,3]]) <= 1,
-        #                 label=f'neighbour_{i}_{k}_0_3')
-        #cqm.add_constraint(sum([vars.neighbour[i,k,s] for s in [1,4]]) <= 1,
-        #                 label=f'neighbour_{i}_{k}_1_4')       
-        #cqm.add_constraint(sum([vars.neighbour[i,k,s] for s in [2,5]]) <= 1,
-        #                 label=f'neighbour_{i}_{k}_2_5')  
-
-        ##cqm.add_constraint(sum([vars.potential_support[i,k,s] for s in [2,5]]) <= 1)
-        ##cqm.add_constraint(vars.potential_support[i,k,2] - vars.selector[i,k,2] <= 0)
-        ##cqm.add_constraint(vars.potential_support[i,k,5] - vars.selector[i,k,5] <= 0)                                 
-
-        # relative positioning does not always mean it is sufficiently close to be called a neighbour
-        # but a neighbour (in a certain direction) always needs to be known in the selector object
-        #for s in range(6):
-        #    cqm.add_constraint(vars.neighbour[i,k,s] - vars.selector[i,k,s] <= 0, label=f'neighbour_selector_{i}_{k}_{s}' )     
-
-        #for s in [2,5]:
-        #    cqm.add_constraint(vars.potential_support[i,k,s] - vars.selector[i,k,s] <= 0, label=f'potential_support_selector_{i}_{k}_{s}' )                                                     
-        #for s in [0,1,3,4]:
-        #    cqm.add_constraint(vars.potential_support[i,k,s] == 0, label=f'potential_support_selector_{i}_{k}_{s}' )
-
-        ## a configuration is only called 'potential support' if all other 'selector values' are 0
-        #cqm.add_constraint(((1-vars.selector[i,k,0])+
-        #                    (1-vars.selector[i,k,1])+
-        #                    (1-vars.selector[i,k,3])+
-        #                    (1-vars.selector[i,k,4])+
-        #                    (vars.selector[i,k,2] + vars.selector[i,k,5])) - 5
-        #    
-        #                    + (vars.potential_support[i,k,2] + vars.potential_support[i,k,5])
-        #                   
-        #                     >= 0,
-        #                   label = f'potential_support_{i}_{k}' )
+        ## 2 cases can only be direct neighbours in maximally one direction only
+        #cqm.add_constraint(sum([vars.neighbour[i,k,s] for s in range(6)]) <= 1,
+        #                 label=f'neighbour_{i}_{k}')
 
         for j in range(num_bins):
             cases_on_same_bin = vars.bin_loc[i, j] * vars.bin_loc[k, j]
-
-            ##min_xt[i,k] = (vars.x[i] + dx[i] + vars.x[k] + dx[k] - vars.Yxt[i,k] * (vars.x[i] + dx[i] - vars.x[k] - dx[k]) 
-            ##                                     + (1 - vars.Yxt[i,k]) * (vars.x[i] + dx[i] - vars.x[k] - dx[k]))/2
-            ##cqm.add_constraint(vars.Yxt[i,k] * (vars.x[i] + dx[i] - vars.x[k] - dx[k]) - (1 - vars.Yxt[i,k]) * (vars.x[i] + dx[i] - vars.x[k] - dx[k]) >= 0,
-            ##                   label=f'abs_enablement_min_xt_{i}_{k}_{j}')            
-
-            ##min_yt[i,k] = (vars.y[i] + dy[i] + vars.y[k] + dy[k] - vars.Yyt[i,k] * (vars.y[i] + dy[i] - vars.y[k] - dy[k]) 
-            ##                                     + (1 - vars.Yyt[i,k]) * (vars.y[i] + dy[i] - vars.y[k] - dy[k]))/2
-            ##cqm.add_constraint(vars.Yyt[i,k] * (vars.y[i] + dy[i] - vars.y[k] - dy[k]) - (1 - vars.Yyt[i,k]) * (vars.y[i] + dy[i] - vars.y[k] - dy[k]) >= 0,
-            ##                   label=f'abs_enablement_min_yt_{i}_{k}_{j}')  
-
-            ##min_zt[i,k] = (vars.z[i] + dz[i] + vars.z[k] + dz[k] - vars.Yzt[i,k] * (vars.z[i] + dz[i] - vars.z[k] - dz[k]) 
-            ##                                     + (1 - vars.Yzt[i,k]) * (vars.z[i] + dz[i] - vars.z[k] - dz[k]))/2
-            ##cqm.add_constraint(vars.Yzt[i,k] * (vars.z[i] + dz[i] - vars.z[k] - dz[k]) - (1 - vars.Yzt[i,k]) * (vars.z[i] + dz[i] - vars.z[k] - dz[k]) >= 0,
-            ##                   label=f'abs_enablement_min_zt_{i}_{k}_{j}')                                 
-
-
-            ##max_xf[i,k] = (vars.x[i] + vars.x[k] + vars.Yxf[i,k] * (vars.x[i] - vars.x[k]) 
-            ##                                     - (1 - vars.Yxf[i,k]) * (vars.x[i] - vars.x[k]))/2
-            ##cqm.add_constraint(vars.Yxf[i,k] * (vars.x[i] - vars.x[k]) - (1 - vars.Yxf[i,k]) * (vars.x[i] - vars.x[k]) >= 0,
-            ##                   label=f'abs_enablement_max_xf_{i}_{k}_{j}')
-            ##max_yf[i,k] = (vars.y[i] + vars.y[k] + vars.Yyf[i,k] * (vars.y[i] - vars.y[k]) 
-            ##                                     - (1 - vars.Yyf[i,k]) * (vars.y[i] - vars.y[k]))/2
-            ##cqm.add_constraint(vars.Yyf[i,k] * (vars.y[i] - vars.y[k]) - (1 - vars.Yyf[i,k]) * (vars.y[i] - vars.y[k]) >= 0,
-            ##                   label=f'abs_enablement_max_yf_{i}_{k}_{j}')
-            ##max_zf[i,k] = (vars.z[i] + vars.z[k] + vars.Yzf[i,k]  * (vars.z[i] - vars.z[k]) 
-            ##                                     - (1 - vars.Yzf[i,k]) * (vars.z[i] - vars.z[k]))/2
-            ##cqm.add_constraint(vars.Yzf[i,k] * (vars.z[i] - vars.z[k]) - (1 - vars.Yzf[i,k]) * (vars.z[i] - vars.z[k]) >= 0,
-            ##                   label=f'abs_enablement_max_zf_{i}_{k}_{j}')
-
-            ##common_X[i,k] = min_xt[i,k] - max_xf[i,k]
-            ##common_Y[i,k] = min_yt[i,k] - max_yf[i,k]
-            ##common_Z[i,k] = min_zt[i,k] - max_zf[i,k]  
-
-            #common_XY[i,k] = common_X[i,k] * common_Y[i,k]
-            #common_YZ[i,k] = common_Y[i,k] * common_Z[i,k]
-            #common_XZ[i,k] = common_X[i,k] * common_Z[i,k]
-
-            ## no relu possible due to error "cannot multiply QM's with interactions"
-            #common_X[i,k] = (common_Xb[i,k] + vars.Rx[i,k] * common_Xb[i,k] - (1 - vars.Rx[i,k]) * common_Xb[i,k])/2
-            #cqm.add_constraint(vars.Rx[i,k] * common_Xb[i,k] - (1 - vars.Rx[i,k]) * common_Xb[i,k] >= 0,
-            #                   label=f'relu_enablement_Rx_{i}_{k}_{j}')
-            #common_Y[i,k] = (common_Yb[i,k] + vars.Ry[i,k] * common_Yb[i,k] - (1 - vars.Ry[i,k]) * common_Yb[i,k])/2
-            #cqm.add_constraint(vars.Ry[i,k] * common_Yb[i,k] - (1 - vars.Ry[i,k]) * common_Yb[i,k] >= 0,
-            #                   label=f'relu_enablement_Ry_{i}_{k}_{j}')
-            #common_Z[i,k] = (common_Zb[i,k] + vars.Rz[i,k] * common_Zb[i,k] - (1 - vars.Rz[i,k]) * common_Zb[i,k])/2
-            #cqm.add_constraint(vars.Rz[i,k] * common_Zb[i,k] - (1 - vars.Rz[i,k]) * common_Zb[i,k] >= 0,
-            #                   label=f'relu_enablement_Rz_{i}_{k}_{j}')
 
             # case i is behind of case k
             cqm.add_constraint(
@@ -290,30 +180,39 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.x[i] + dx[i] - vars.x[k]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_0')
 
+            ## case i is below case k, and is touching (i.e. neighbour) 
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,0]*(vars.x[k]-vars.x[i]-dx[i])+(1-vars.neighbour[i,k,0])*(vars.x[k]-vars.x[i]-dx[i]+1) >= 0,
+            #    label=f'neighbour_{i}_{k}_{j}_0')
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,0]-vars.selector[i,k,0]<=0)                  
+
             # case i is left of case k
             cqm.add_constraint(
                 -(2 - cases_on_same_bin - vars.selector[i, k, 1]) * bins.width +
                 (vars.y[i] + dy[i] - vars.y[k]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_1')
 
+            ## case i is below case k, and is touching (i.e. neighbour) 
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,1]*(vars.y[k]-vars.y[i]-dy[i])+(1-vars.neighbour[i,k,1])*(vars.y[k]-vars.y[i]-dy[i]+1) >= 0,
+            #    label=f'neighbour_{i}_{k}_{j}_1')
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,1]-vars.selector[i,k,1]<=0)                            
+
             # case i is below case k 
-            ##      (no closer than 0 cm)
             cqm.add_constraint(
                 -(2 - cases_on_same_bin - vars.selector[i, k, 2]) * bins.height +
                 (vars.z[i] + dz[i] - vars.z[k] ) + 0 <= 0,    
-                label=f'overlap_{i}_{k}_{j}_2_min')
-            ###      (no further than 0 cm away) 
-            #cqm.add_constraint(
-            #    -(2 - cases_on_same_bin - vars.neighbour[i, k, 2]) * bins.height +
-            #    (vars.z[k] - (vars.z[i] + dz[i])) < 0,    
-            #    label=f'overlap_{i}_{k}_{j}_2_max')                
+                label=f'overlap_{i}_{k}_{j}_2')    
 
-            ###       98% supporting area (vertically)
+            ## case i is below case k, and is touching (i.e. neighbour) 
             #cqm.add_constraint(
-            #    -(3 - cases_on_same_bin - vars.selector[i, k, 2] - vars.neighbour[i, k, 2]) * bins.height + 
-            #    (0.98 * (dx[k] * dy[k]) - common_X[i,k] * common_Y[i,k]) <= 0, # 98% support needed vertically
-            #     label=f'support_{i}_{k}_{j}_2')   
-                                           
+            #    vars.neighbour[i,k,2]*(vars.z[k]-vars.z[i]-dz[i])+(1-vars.neighbour[i,k,2])*(vars.z[k]-vars.z[i]-dz[i]+1) >= 0,
+            #    label=f'neighbour_{i}_{k}_{j}_2')
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,2]-vars.selector[i,k,2]<=0,
+            #    label=f'neighbour2_{i}_{k}_{j}_2')                                       
 
             # case i is in front of of case k
             cqm.add_constraint(
@@ -321,44 +220,53 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.x[k] + dx[k] - vars.x[i]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_3')
 
+            ## case i is in front of of case k, and is touching (i.e. neighbour)
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,3]*(vars.x[i]-vars.x[k]-dx[k])-(1-vars.neighbour[i,k,3])*(vars.x[i]-vars.x[k]-dx[k]+1) >= 0,
+            #    label=f'neighbour_{i}_{k}_{j}_3')
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,3]-vars.selector[i,k,3]<=0)                               
+
             # case i is right of case k
             cqm.add_constraint(
                 -(2 - cases_on_same_bin - vars.selector[i, k, 4]) * bins.width +
                 (vars.y[k] + dy[k] - vars.y[i]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_4')
 
+            ## case i is right of case k, and is touching (i.e. neighbour) 
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,4]*(vars.y[i]-vars.y[k]-dy[k])-(1-vars.neighbour[i,k,4])*(vars.y[i]-vars.y[k]-dy[k]+1) >= 0,
+            #    label=f'neighbour_{i}_{k}_{j}_4')
+            #cqm.add_constraint(
+            #    vars.neighbour[i,k,4]-vars.selector[i,k,4]<=0)                          
+
             # case i is above case k
-            ##      (no closer than 0 cm)
             cqm.add_constraint(
                 -(2 - cases_on_same_bin - vars.selector[i, k, 5]) * bins.height +
                 (vars.z[k] + dz[k] - vars.z[i] ) + 0 <= 0,    
-                label=f'overlap_{i}_{k}_{j}_5')
-            
-            #cqm.add_constraint(
-            #    -(2 - cases_on_same_bin - vars.neighbour[i, k, 5]) * bins.height +
-            #    (vars.z[i] - (vars.z[k] + dz[k]) - 5) <= 0,    
-            #    label=f'overlap_{i}_{k}_{j}_5_max')                
+                label=f'overlap_{i}_{k}_{j}_5')   
 
-            ###      98% supporting area (vertically)
-            #cqm.add_constraint(
-            #    -(3 - cases_on_same_bin - vars.selector[i, k, 5] - vars.neighbour[i, k, 5]) * bins.height + 
-            #    (0.98 * (dx[i] * dy[i]) - common_X[i,k] * common_Y[i,k]) <= 0,
-            #     label=f'support_{i}_{k}_{j}_5')                  
+            # case i is above case k, and is touching (i.e. neighbour)           
+            cqm.add_constraint(
+                vars.neighbour[i,k,5]*(vars.z[i]-vars.z[k]-dz[k])-(1-vars.neighbour[i,k,5])*(vars.z[i]-vars.z[k]-dz[k]+1) >= 0,
+                label=f'neighbour_{i}_{k}_{j}_5')
+            cqm.add_constraint(
+                vars.neighbour[i,k,5]-vars.selector[i,k,5]<=0,
+                label=f'neighbour2_{i}_{k}_{j}_5')
+
 
     if num_bins > 1:
         for i in range(num_cases):
                 cqm.add_discrete(
                 quicksum([vars.bin_loc[i, j] for j in range(num_bins)]),
                 label=f'case_{i}_max_packed')
-    
-    ## return [common_X, common_Y, common_Z, max_xf, min_xt, max_yf, min_xt, max_zf, min_zt]
 
 def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                               bins: Bins, cases: Cases,
                               effective_dimensions: list):
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    dx, dy, dz = effective_dimensions
+    dx, dy, dz, x2, y2, z2 = effective_dimensions
     for i in range(num_cases):
         for j in range(num_bins):
             cqm.add_constraint(vars.z[i] + dz[i] - vars.bin_height[j] -
@@ -379,11 +287,13 @@ def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 label=f'maxy_{i}_{j}_less')
 
 
+
+
 def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
                       bins: Bins, cases: Cases, effective_dimensions: list):
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    dx, dy, dz = effective_dimensions
+    dx, dy, dz, x2, y2, z2 = effective_dimensions
     
     target_X = bins.target_X
     target_Y = bins.width / 2
@@ -419,12 +329,11 @@ def build_cqm(vars: Variables, bins: Bins,
     cqm = ConstrainedQuadraticModel()
     effective_dimensions = _add_orientation_constraints(cqm, vars, cases)
     _add_bin_on_constraint(cqm, vars, bins, cases)
-    ## effective_overlap = _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
     _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
     _add_boundary_constraints(cqm, vars, bins, cases, effective_dimensions)
     _define_objective(cqm, vars, bins, cases, effective_dimensions)
 
-    return cqm, effective_dimensions ##, effective_overlap
+    return cqm, effective_dimensions 
 
 
 def call_solver(cqm: ConstrainedQuadraticModel,
@@ -502,7 +411,6 @@ if __name__ == '__main__':
 
     vars = Variables(cases, bins)
 
-    ##cqm, effective_dimensions, effective_overlap = build_cqm(vars, bins, cases)
     cqm, effective_dimensions = build_cqm(vars, bins, cases)
 
     print_cqm_stats(cqm)
