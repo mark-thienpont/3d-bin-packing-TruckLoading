@@ -180,12 +180,13 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.x[i] + dx[i] - vars.x[k]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_0')
 
-            ## case i is below case k, and is touching (i.e. neighbour) 
+            ## case i is behind case k, and is touching (i.e. neighbour) 
             #cqm.add_constraint(
             #    vars.neighbour[i,k,0]*(vars.x[k]-vars.x[i]-dx[i])+(1-vars.neighbour[i,k,0])*(vars.x[k]-vars.x[i]-dx[i]+1) >= 0,
             #    label=f'neighbour_{i}_{k}_{j}_0')
             #cqm.add_constraint(
-            #    vars.neighbour[i,k,0]-vars.selector[i,k,0]<=0)                  
+            #    vars.neighbour[i,k,0]-vars.selector[i,k,0]<=0,
+            #    label=f'neighbour2_{i}_{k}_{j}_0')                
 
             # case i is left of case k
             cqm.add_constraint(
@@ -193,12 +194,13 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.y[i] + dy[i] - vars.y[k]) + 0 <= 0,
                 label=f'overlap_{i}_{k}_{j}_1')
 
-            ## case i is below case k, and is touching (i.e. neighbour) 
+            ## case i is left from case k, and is touching (i.e. neighbour) 
             #cqm.add_constraint(
             #    vars.neighbour[i,k,1]*(vars.y[k]-vars.y[i]-dy[i])+(1-vars.neighbour[i,k,1])*(vars.y[k]-vars.y[i]-dy[i]+1) >= 0,
             #    label=f'neighbour_{i}_{k}_{j}_1')
             #cqm.add_constraint(
-            #    vars.neighbour[i,k,1]-vars.selector[i,k,1]<=0)                            
+            #    vars.neighbour[i,k,1]-vars.selector[i,k,1]<=0,
+            #    label=f'neighbour2_{i}_{k}_{j}_1')                            
 
             # case i is below case k 
             cqm.add_constraint(
@@ -206,13 +208,13 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                 (vars.z[i] + dz[i] - vars.z[k] ) + 0 <= 0,    
                 label=f'overlap_{i}_{k}_{j}_2')    
 
-            ## case i is below case k, and is touching (i.e. neighbour) 
-            #cqm.add_constraint(
-            #    vars.neighbour[i,k,2]*(vars.z[k]-vars.z[i]-dz[i])+(1-vars.neighbour[i,k,2])*(vars.z[k]-vars.z[i]-dz[i]+1) >= 0,
-            #    label=f'neighbour_{i}_{k}_{j}_2')
-            #cqm.add_constraint(
-            #    vars.neighbour[i,k,2]-vars.selector[i,k,2]<=0,
-            #    label=f'neighbour2_{i}_{k}_{j}_2')                                       
+            ## case i is below case k, and is touching (i.e. neighbour)          
+            cqm.add_constraint(
+                vars.neighbour[i,k,2]*(vars.z[k]-vars.z[i]-dz[i])-(1-vars.neighbour[i,k,2])*(vars.z[k]-vars.z[i]-dz[i]+1) >= 0,
+                label=f'neighbour_{i}_{k}_{j}_2')
+            cqm.add_constraint(
+                vars.neighbour[i,k,2]-vars.selector[i,k,2]<=0,
+                label=f'neighbour2_{i}_{k}_{j}_2')                                                  
 
             # case i is in front of of case k
             cqm.add_constraint(
@@ -225,7 +227,8 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
             #    vars.neighbour[i,k,3]*(vars.x[i]-vars.x[k]-dx[k])-(1-vars.neighbour[i,k,3])*(vars.x[i]-vars.x[k]-dx[k]+1) >= 0,
             #    label=f'neighbour_{i}_{k}_{j}_3')
             #cqm.add_constraint(
-            #    vars.neighbour[i,k,3]-vars.selector[i,k,3]<=0)                               
+            #    vars.neighbour[i,k,3]-vars.selector[i,k,3]<=0,
+            #    label=f'neighbour2_{i}_{k}_{j}_3')                              
 
             # case i is right of case k
             cqm.add_constraint(
@@ -238,7 +241,8 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
             #    vars.neighbour[i,k,4]*(vars.y[i]-vars.y[k]-dy[k])-(1-vars.neighbour[i,k,4])*(vars.y[i]-vars.y[k]-dy[k]+1) >= 0,
             #    label=f'neighbour_{i}_{k}_{j}_4')
             #cqm.add_constraint(
-            #    vars.neighbour[i,k,4]-vars.selector[i,k,4]<=0)                          
+            #    vars.neighbour[i,k,4]-vars.selector[i,k,4]<=0,
+            #    label=f'neighbour2_{i}_{k}_{j}_4')                      
 
             # case i is above case k
             cqm.add_constraint(

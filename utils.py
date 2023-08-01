@@ -282,7 +282,8 @@ def write_solution_to_file(solution_file_path: str,
     vs4 = [['case_i', 'case_k', 'direction', 'neighbour']]
     for i, k in combinations(range(num_cases), r=2):
         for s in [2,5]:
-            vs4.append([cases.case_ids[i], cases.case_ids[k], s, vars.neighbour[i,k,s].energy(sample)])
+            if vars.neighbour[i,k,s].energy(sample) == 1:
+                vs4.append([cases.case_ids[i], cases.case_ids[k], s, vars.neighbour[i,k,s].energy(sample)])
 
     ##vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
     ##for i, k in combinations(range(num_cases), r=2):
