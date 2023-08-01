@@ -20,6 +20,7 @@ from tabulate import tabulate
 from typing import List, Optional, TYPE_CHECKING
 import dimod
 from dimod import quicksum
+from itertools import combinations
 
 if TYPE_CHECKING:
     from packing3d import Cases, Bins, Variables
@@ -223,7 +224,8 @@ def write_solution_to_file(solution_file_path: str,
                            sample: dimod.SampleSet,
                            cases: "Cases",
                            bins: "Bins",
-                           effective_dimensions: list):
+                           effective_dimensions: list,
+                           effective_overlap: list):
     """Write solution to a file.
 
     Args:
@@ -241,6 +243,7 @@ def write_solution_to_file(solution_file_path: str,
     num_cases = cases.num_cases
     num_bins = bins.num_bins
     dx, dy, dz = effective_dimensions
+    common_X, common_Y, common_Z, max_xf, min_xt, max_yf, min_xt, max_zf, min_zt = effective_overlap
 
     # calculated resulting COG_X, COG_Y, and COG_Z
     COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
@@ -270,16 +273,49 @@ def write_solution_to_file(solution_file_path: str,
                    np.round(dy[i].energy(sample), 2),
                    np.round(dz[i].energy(sample), 2)])
 
+    vs2 = [['case_i', 'case_k', 'common_X', 'common_Y', 'common_Z']]
+    for i, k in combinations(range(num_cases), r=2):
+        vs2.append([cases.case_ids[i], cases.case_ids[k], np.round(common_X[i,k].energy(sample), 2), 
+                                                          np.round(common_Y[i,k].energy(sample), 2),
+                                                          np.round(common_Z[i,k].energy(sample), 2),])
+
+    vs3 = [['case_i', 'case_k', 'direction', 'selector']]
+    for i, k in combinations(range(num_cases), r=2):
+        for s in range(6):
+            vs3.append([cases.case_ids[i], cases.case_ids[k], s, vars.selector[i,k,s].energy(sample)])
+
+    vs4 = [['case_i', 'case_k', 'direction', 'potential_support']]
+    for i, k in combinations(range(num_cases), r=2):
+        for s in [2,5]:
+            vs4.append([cases.case_ids[i], cases.case_ids[k], s, vars.potential_support[i,k,s].energy(sample)])
+
+    vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
+    for i, k in combinations(range(num_cases), r=2):
+        vs5.append([cases.case_ids[i], cases.case_ids[k], np.round(max_xf[i,k].energy(sample),2), 
+                                                          np.round(min_xt[i,k].energy(sample),2), 
+                                                          np.round(max_yf[i,k].energy(sample),2), 
+                                                          np.round(min_xt[i,k].energy(sample),2), 
+                                                          np.round(max_zf[i,k].energy(sample),2), 
+                                                          np.round(min_zt[i,k].energy(sample),2)]) 
+
     with open(solution_file_path, 'w') as f:
         f.write('# Number of bins used: ' + str(int(num_bin_used)) + '\n')
         f.write('# Number of cases packed: ' + str(int(num_cases)) + '\n')
-        f.write(
-            '# Objective value: ' + str(np.round(objective_value, 3)) + '\n\n')
+        f.write('# Objective value: ' + str(np.round(objective_value, 3)) + '\n\n')
         f.write('# COG_X: ' + str(np.round(COG_X, 0)) + '\n')
         f.write('# COG_Y: ' + str(np.round(COG_Y, 0)) + '\n')
         f.write('# COG_Z: ' + str(np.round(COG_Z, 0)) + '\n')
 
         f.write(tabulate(vs, headers="firstrow"))
+        f.write('\n')
+        f.write(tabulate(vs2, headers="firstrow"))
+        f.write('\n')
+        f.write(tabulate(vs3, headers="firstrow"))
+        f.write('\n')
+        f.write(tabulate(vs4, headers="firstrow"))
+        f.write('\n')
+        f.write(tabulate(vs5, headers="firstrow"))
+        f.write('\n')        
         f.close()
         print(f'Saved solution to '
               f'{os.path.join(os.getcwd(), solution_file_path)}')

@@ -48,7 +48,7 @@ def _solve_bin_packing_instance(data: dict,
 
     model_variables = Variables(cases, bins)
 
-    cqm, effective_dimensions = build_cqm(model_variables, bins, cases)
+    cqm, effective_dimensions, effective_overlap = build_cqm(model_variables, bins, cases)
 
     best_feasible = call_solver(cqm, time_limit, use_cqm_solver)
 
@@ -62,7 +62,7 @@ def _solve_bin_packing_instance(data: dict,
     if write_to_file:
         write_solution_to_file(solution_filename, cqm, 
                                model_variables, best_feasible,
-                               cases, bins, effective_dimensions)
+                               cases, bins, effective_dimensions, effective_overlap)
 
 
 st.set_page_config(layout="wide")
@@ -87,7 +87,7 @@ use_cqm_solver = True
 
 if run_type == "File upload":
     problem_filepath = st.sidebar.text_input(label="Problem instance file",
-                                             value="input/LoadList_1.csv")
+                                             value="input/LoadList_4.csv")
     time_limit = st.sidebar.number_input(label="Hybrid solver time limit (S)",
                                          value=5)
 
@@ -95,7 +95,7 @@ if run_type == "File upload":
     display_input = False
     write_to_file = True
     solution_filename = st.sidebar.text_input(label="Solution filename", 
-                                              value = "output/LoadList_835982.csv")
+                                              value = "output/LoadList_4.csv")
 
     run_button = st.sidebar.button("Run")
 
