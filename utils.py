@@ -224,7 +224,8 @@ def write_solution_to_file(solution_file_path: str,
                            sample: dimod.SampleSet,
                            cases: "Cases",
                            bins: "Bins",
-                           effective_dimensions: list):
+                           effective_dimensions: list,
+                           effective_overlapping:list):
     """Write solution to a file.
 
     Args:
@@ -242,6 +243,7 @@ def write_solution_to_file(solution_file_path: str,
     num_cases = cases.num_cases
     num_bins = bins.num_bins
     dx, dy, dz, x2, y2, z2 = effective_dimensions
+    common_X, common_Y = effective_overlapping
 
     # calculated resulting COG_X, COG_Y, and COG_Z
     COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
@@ -274,16 +276,25 @@ def write_solution_to_file(solution_file_path: str,
                    np.round(dy[i].energy(sample), 2),
                    np.round(dz[i].energy(sample), 2)])
 
-    vs3 = [['case_i', 'case_k', 'direction', 'selector']]
-    for i, k in combinations(range(num_cases), r=2):
-        for s in range(6):
-            vs3.append([cases.case_ids[i], cases.case_ids[k], s, vars.selector[i,k,s].energy(sample)])
+    #vs3 = [['case_i', 'case_k', 'direction', 'selector']]
+    #for i, k in combinations(range(num_cases), r=2):
+    #    for s in range(6):
+    #        vs3.append([cases.case_ids[i], cases.case_ids[k], s, vars.selector[i,k,s].energy(sample)])
 
-    vs4 = [['case_i', 'case_k', 'direction', 'neighbour']]
+    vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'common_X', 'common_Y', 'position_0', 'position_1', 'position_3', 'position_4' ]]
     for i, k in combinations(range(num_cases), r=2):
         for s in [2,5]:
             if vars.neighbour[i,k,s].energy(sample) == 1:
-                vs4.append([cases.case_ids[i], cases.case_ids[k], s, vars.neighbour[i,k,s].energy(sample)])
+                vs4.append([cases.case_ids[i], 
+                            cases.case_ids[k], 
+                            s, 
+                            vars.neighbour[i,k,s].energy(sample), 
+                            np.round(common_X[i,k].energy(sample),2), 
+                            np.round(common_Y[i,k].energy(sample),2),
+                            vars.position[i,k,0].energy(sample),
+                            vars.position[i,k,1].energy(sample),
+                            vars.position[i,k,3].energy(sample),
+                            vars.position[i,k,4].energy(sample)])
 
     ##vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
     ##for i, k in combinations(range(num_cases), r=2):
@@ -306,8 +317,8 @@ def write_solution_to_file(solution_file_path: str,
         f.write('\n')
         ##f.write(tabulate(vs2, headers="firstrow"))
         ##f.write('\n')
-        f.write(tabulate(vs3, headers="firstrow"))
-        f.write('\n')
+        ##f.write(tabulate(vs3, headers="firstrow"))
+        ##f.write('\n')
         f.write(tabulate(vs4, headers="firstrow"))
         f.write('\n')
         ##f.write(tabulate(vs5, headers="firstrow"))
