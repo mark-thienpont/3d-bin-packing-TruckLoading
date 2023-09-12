@@ -224,8 +224,7 @@ def write_solution_to_file(solution_file_path: str,
                            sample: dimod.SampleSet,
                            cases: "Cases",
                            bins: "Bins",
-                           effective_dimensions: list,
-                           effective_overlapping:list):
+                           effective_dimensions: list):
     """Write solution to a file.
 
     Args:
@@ -243,7 +242,6 @@ def write_solution_to_file(solution_file_path: str,
     num_cases = cases.num_cases
     num_bins = bins.num_bins
     dx, dy, dz, x2, y2, z2 = effective_dimensions
-    common_X, common_Y, common_Z = effective_overlapping
 
     # calculated resulting COG_X, COG_Y, and COG_Z
     COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
@@ -257,43 +255,49 @@ def write_solution_to_file(solution_file_path: str,
         num_bin_used = 1
 
     objective_value = cqm.objective.energy(sample)
-    vs = [['case_id', 'bin-location', 'orientation', 'x', 'y', 'z', "x'",
-           "y'", "z'", 'dx', 'dy', 'dz']]
+    vs = [['case_id', 'orientation', 'x', 'y', 'z', 'floor', "x'",
+           "y'", "z'", 'dx', 'dy', 'dz', 'QSLOIx2', 'QSLOIx5', 'QSLOIy2', 'QSLOIy5']]
     for i in range(num_cases):
         vs.append([cases.case_ids[i],
-                   int(sum((j + 1) * vars.bin_loc[i, j].energy(sample)
-                           if num_bins > 1 else 1
-                           for j in range(num_bins))),
                    int(sum((r + 1) * vars.o[i, r].energy(sample) for r in
                            [0,2])),
                    np.round(vars.x[i].energy(sample), 2),
                    np.round(vars.y[i].energy(sample), 2),
                    np.round(vars.z[i].energy(sample), 2),
+                   vars.floor[i].energy(sample),
                    np.round(x2[i].energy(sample), 2),
                    np.round(y2[i].energy(sample), 2),
                    np.round(z2[i].energy(sample), 2),
                    np.round(dx[i].energy(sample), 2),
                    np.round(dy[i].energy(sample), 2),
-                   np.round(dz[i].energy(sample), 2)])
+                   np.round(dz[i].energy(sample), 2),
+                   np.round(vars.QSLOIx2[i].energy(sample), 2),
+                   np.round(vars.QSLOIx5[i].energy(sample), 2),
+                   np.round(vars.QSLOIy2[i].energy(sample), 2),
+                   np.round(vars.QSLOIy5[i].energy(sample), 2)])
 
     #vs3 = [['case_i', 'case_k', 'direction', 'selector']]
     #for i, k in combinations(range(num_cases), r=2):
     #    for s in range(6):
     #        vs3.append([cases.case_ids[i], cases.case_ids[k], s, vars.selector[i,k,s].energy(sample)])
 
-    vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'LOIx', 'LOIy', 'LOBx', 'LOBy', 'SOBxy']]
+    vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'LOIx', 'LOIy', 'LOBx', 'LOBy', 'SOBxy', 'NOBxy2', 'NOBxy5', 'QStest2', 'QStest5']]
     for i, j in combinations(range(num_cases), r=2):
         for s in [2,5]:
-            if vars.neighbour[i,j,s].energy(sample) == 1:
+            if (vars.NOBxy[i,j,s].energy(sample) == 1):
                 vs4.append([cases.case_ids[i], 
                             cases.case_ids[j], 
-                            s, 
-                            vars.neighbour[i,j,s].energy(sample),                           
+                            s,      
+                            vars.neighbour[i,j,s].energy(sample),                    
                             vars.LOIx[i,j].energy(sample),
                             vars.LOIy[i,j].energy(sample),
                             vars.LOBx[i,j].energy(sample),
-                            vars.LOBy[i,j].energy(sample),                        
-                            vars.SOBxy[i,j].energy(sample)])
+                            vars.LOBy[i,j].energy(sample),
+                            vars.SOBxy[i,j].energy(sample),
+                            vars.NOBxy[i,j,2].energy(sample),
+                            vars.NOBxy[i,j,5].energy(sample),
+                            vars.QStest2[i,j].energy(sample),
+                            vars.QStest5[i,j].energy(sample)])
 
     ##vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
     ##for i, k in combinations(range(num_cases), r=2):
