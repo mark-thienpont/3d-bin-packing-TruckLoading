@@ -78,12 +78,12 @@ class Variables:
 
         self.floor = {i: Binary(f'floor_{i}') for i in range(num_cases)}  
 
-        self.QSLOIx2 = {i: Integer(f'QSLOIx2_{i}') for i in range(num_cases)}  
-        self.QSLOIx5 = {i: Integer(f'QSLOIx5_{i}') for i in range(num_cases)}  
-        self.QSLOIy2 = {i: Integer(f'QSLOIy2_{i}') for i in range(num_cases)}  
-        self.QSLOIy5 = {i: Integer(f'QSLOIy5_{i}') for i in range(num_cases)} 
-        self.QStest2 = {i: Integer(f'QStest2_{i}') for i in range(num_cases)}  
-        self.QStest5 = {i: Integer(f'QStest5_{i}') for i in range(num_cases)}                  
+        #self.QSLOIx2 = {i: Integer(f'QSLOIx2_{i}') for i in range(num_cases)}  
+        #self.QSLOIx5 = {i: Integer(f'QSLOIx5_{i}') for i in range(num_cases)}  
+        #self.QSLOIy2 = {i: Integer(f'QSLOIy2_{i}') for i in range(num_cases)}  
+        #self.QSLOIy5 = {i: Integer(f'QSLOIy5_{i}') for i in range(num_cases)} 
+        #self.QStest2 = {i: Integer(f'QStest2_{i}') for i in range(num_cases)}  
+        #self.QStest5 = {i: Integer(f'QStest5_{i}') for i in range(num_cases)}                  
 
         self.o = {(i, k): Binary(f'o_{i}_{k}') for i in range(num_cases)
                   for k in [0,2]}
@@ -95,6 +95,10 @@ class Variables:
         self.neighbour = {(i, j, k): Binary(f'neighbour_{i}_{j}_{k}')
                          for i, j in combinations(range(num_cases), r=2)
                          for k in range(6)}   
+
+        self.directneighbour = {(i, j, k): Binary(f'neighbour_{i}_{j}_{k}')
+                         for i, j in combinations(range(num_cases), r=2)
+                         for k in range(6)}                
 
         self.NOBxy     = {(i, j, k): Binary(f'neighbour_{i}_{j}_{k}')
                          for i, j in combinations(range(num_cases), r=2)
@@ -115,6 +119,21 @@ class Variables:
         self.LTztf = {(i, j): Binary(f'LTztf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
         self.LTzft = {(i, j): Binary(f'LTzft_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}    
 
+        # Variables 'LTE'
+        self.LTExff = {(i, j): Binary(f'LTExff_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTExtt = {(i, j): Binary(f'LTExtt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEyff = {(i, j): Binary(f'LTEyff_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEytt = {(i, j): Binary(f'LTEytt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEzff = {(i, j): Binary(f'LTEzff_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEztt = {(i, j): Binary(f'LTEztt_{i}_{j}') for i, j in combinations(range(num_cases), r=2)} 
+
+        self.LTExtf = {(i, j): Binary(f'LTExtf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTExft = {(i, j): Binary(f'LTExft_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEytf = {(i, j): Binary(f'LTEytf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEyft = {(i, j): Binary(f'LTEyft_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEztf = {(i, j): Binary(f'LTEztf_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
+        self.LTEzft = {(i, j): Binary(f'LTEzft_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}    
+
         # Variables 'Linear Overlap Binary'
         self.LOBx = {(i, j): Binary(f'LOBx_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
         self.LOBy = {(i, j): Binary(f'LOBy_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
@@ -123,17 +142,33 @@ class Variables:
         # Variables 'Surface Overlap Binary'
         self.SOBxy = {(i, j): Binary(f'SOBxy_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
         self.SOBxz = {(i, j): Binary(f'SOBxz_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}
-        self.SOByz = {(i, j): Binary(f'SOByz_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}     
+        self.SOByz = {(i, j): Binary(f'SOByz_{i}_{j}') for i, j in combinations(range(num_cases), r=2)}   
 
-        # Variables 'Linear Overlap Integer'
-        self.LOIx = {(i, j): Integer(f'LOIx_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}
-        self.LOIy = {(i, j): Integer(f'LOIy_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}
-        self.LOIz = {(i, j): Integer(f'LOIz_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}                 
-
-        # helper variable to determine real position "left", "right", "before", "after", "above", "below"
-        self.position = {(i, j, k): Binary(f'sel_{i}_{j}_{k}')
+        ## Variables 'test'
+        self.testx     = {(i, j, k): Binary(f'neighbour_{i}_{j}_{k}')
                          for i, j in combinations(range(num_cases), r=2)
-                         for k in range(6)}                 
+                         for k in range(6)}   
+        self.testy     = {(i, j, k): Binary(f'neighbour_{i}_{j}_{k}')
+                         for i, j in combinations(range(num_cases), r=2)
+                         for k in range(6)}                                   
+
+        ## Variables 'Linear Overlap Integer'
+        #self.LOIx = {(i, j): Integer(f'LOIx_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}
+        #self.LOIy = {(i, j): Integer(f'LOIy_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}
+        #self.LOIz = {(i, j): Integer(f'LOIz_{i}_{j}', lower_bound = -10000) for i, j in combinations(range(num_cases), r=2)}                 
+
+        ## helper variable to determine real position "left", "right", "before", "after", "above", "below"
+        #self.position = {(i, j, k): Binary(f'sel_{i}_{j}_{k}')
+        #                 for i, j in combinations(range(num_cases), r=2)
+        #                 for k in range(6)}                 
+
+
+def _initialisation_constraints(cqm: ConstrainedQuadraticModel,
+                                 vars: Variables, cases: Cases) -> list:
+
+    cqm.add_constraint( vars.x[0] == 0, label=f'x_{0}') 
+    cqm.add_constraint( vars.y[0] == 0, label=f'y_{0}') 
+    cqm.add_constraint( vars.z[0] == 0, label=f'z_{0}') 
 
 
 def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
@@ -184,7 +219,8 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
     min_ztt = {}    
 
     for i in range(num_cases):
-        cqm.add_constraint(- ( 1 - vars.floor[i] ) * vars.z[i] - vars.floor[i] * (1 - vars.z[i]) + 1 <= 0, label=f'floor_{i}')  
+        ## floor determination : eased toward 5 cm floating above bottom surface...
+        cqm.add_constraint( ( 1 - vars.floor[i] ) * (5 - vars.z[i]) - vars.floor[i] * (6 - vars.z[i]) + 1 <= 0, label=f'floor_{i}')  
 
     for i, j in combinations(range(num_cases), r=2):
         cqm.add_constraint(sum([vars.selector[i,j,s] for s in range(6)]) >= 1,
@@ -198,31 +234,58 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
 
 
         ##### determination LT x/y/z tt/ff/tf/ft #####
-        cqm.add_constraint(vars.LTxtt[i,j] * (vars.x[i] + dx[i] - vars.x[j] - dx[j] + 1) - (1 - vars.LTxtt[i,j]) * (vars.x[i] + dx[i] - vars.x[j] - dx[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTxtt[i,j] * (vars.x[i] + dx[i] - vars.x[j] - dx[j]) - (1 - vars.LTxtt[i,j]) * (vars.x[i] + dx[i] - vars.x[j] - dx[j] + 1) + 1 <= 0,
                             label=f'LT_xtt_{i}_{j}')  
-        cqm.add_constraint(vars.LTytt[i,j] * (vars.y[i] + dy[i] - vars.y[j] - dy[j] + 1) - (1 - vars.LTytt[i,j]) * (vars.y[i] + dy[i] - vars.y[j] - dy[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTytt[i,j] * (vars.y[i] + dy[i] - vars.y[j] - dy[j]) - (1 - vars.LTytt[i,j]) * (vars.y[i] + dy[i] - vars.y[j] - dy[j] + 1) + 1 <= 0,
                             label=f'LT_ytt_{i}_{j}')  
-        cqm.add_constraint(vars.LTztt[i,j] * (vars.z[i] + dz[i] - vars.z[j] - dz[j] + 1) - (1 - vars.LTztt[i,j]) * (vars.z[i] + dz[i] - vars.z[j] - dz[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTztt[i,j] * (vars.z[i] + dz[i] - vars.z[j] - dz[j]) - (1 - vars.LTztt[i,j]) * (vars.z[i] + dz[i] - vars.z[j] - dz[j] + 1) + 1 <= 0,
                             label=f'LT_ztt_{i}_{j}')  
-        cqm.add_constraint(vars.LTxff[i,j] * (vars.x[i] - vars.x[j] + 1) - (1 - vars.LTxff[i,j]) * (vars.x[i] - vars.x[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTxff[i,j] * (vars.x[i] - vars.x[j]) - (1 - vars.LTxff[i,j]) * (vars.x[i] - vars.x[j] + 1) + 1 <= 0,
                             label=f'LT_xff_{i}_{j}')
-        cqm.add_constraint(vars.LTyff[i,j] * (vars.y[i] - vars.y[j] + 1) - (1 - vars.LTyff[i,j]) * (vars.y[i] - vars.y[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTyff[i,j] * (vars.y[i] - vars.y[j]) - (1 - vars.LTyff[i,j]) * (vars.y[i] - vars.y[j] + 1) + 1 <= 0,
                             label=f'LT_yff_{i}_{j}')
-        cqm.add_constraint(vars.LTzff[i,j] * (vars.z[i] - vars.z[j] + 1) - (1 - vars.LTzff[i,j]) * (vars.z[i] - vars.z[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTzff[i,j] * (vars.z[i] - vars.z[j]) - (1 - vars.LTzff[i,j]) * (vars.z[i] - vars.z[j] + 1) + 1 <= 0,
                             label=f'LT_zff_{i}_{j}')
-        cqm.add_constraint(vars.LTxtf[i,j] * (vars.x[i] + dx[i] - vars.x[j] + 1) - (1 - vars.LTxtf[i,j]) * (vars.x[i] + dx[i] - vars.x[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTxtf[i,j] * (vars.x[i] + dx[i] - vars.x[j]) - (1 - vars.LTxtf[i,j]) * (vars.x[i] + dx[i] - vars.x[j] + 1) + 1 <= 0,
                             label=f'LT_xtf_{i}_{j}')  
-        cqm.add_constraint(vars.LTytf[i,j] * (vars.y[i] + dy[i] - vars.y[j] + 1) - (1 - vars.LTytf[i,j]) * (vars.y[i] + dy[i] - vars.y[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTytf[i,j] * (vars.y[i] + dy[i] - vars.y[j]) - (1 - vars.LTytf[i,j]) * (vars.y[i] + dy[i] - vars.y[j] + 1) + 1 <= 0,
                             label=f'LT_ytf_{i}_{j}')  
-        cqm.add_constraint(vars.LTztf[i,j] * (vars.z[i] + dz[i] - vars.z[j] + 1) - (1 - vars.LTztf[i,j]) * (vars.z[i] + dz[i] - vars.z[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTztf[i,j] * (vars.z[i] + dz[i] - vars.z[j]) - (1 - vars.LTztf[i,j]) * (vars.z[i] + dz[i] - vars.z[j] + 1) + 1 <= 0,
                             label=f'LT_ztf_{i}_{j}')  
-        cqm.add_constraint(vars.LTxft[i,j] * (vars.x[i] - vars.x[j] - dx[j] + 1) - (1 - vars.LTxft[i,j]) * (vars.x[i] - vars.x[j] - dx[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTxft[i,j] * (vars.x[i] - vars.x[j] - dx[j]) - (1 - vars.LTxft[i,j]) * (vars.x[i] - vars.x[j] - dx[j] + 1) + 1 <= 0,
                             label=f'LT_xft_{i}_{j}')
-        cqm.add_constraint(vars.LTyft[i,j] * (vars.y[i] - vars.y[j] - dy[j] + 1) - (1 - vars.LTyft[i,j]) * (vars.y[i] - vars.y[j] - dy[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTyft[i,j] * (vars.y[i] - vars.y[j] - dy[j]) - (1 - vars.LTyft[i,j]) * (vars.y[i] - vars.y[j] - dy[j] + 1) + 1 <= 0,
                             label=f'LT_yft_{i}_{j}')
-        cqm.add_constraint(vars.LTzft[i,j] * (vars.z[i] - vars.z[j] - dz[j] + 1) - (1 - vars.LTzft[i,j]) * (vars.z[i] - vars.z[j] - dz[j]) - 0 <= 0,
+        cqm.add_constraint(vars.LTzft[i,j] * (vars.z[i] - vars.z[j] - dz[j]) - (1 - vars.LTzft[i,j]) * (vars.z[i] - vars.z[j] - dz[j] + 1) + 1 <= 0,
                             label=f'LT_zft_{i}_{j}')
  
+        ##### determination LTE x/y/z tt/ff/ft/tf #####
+        cqm.add_constraint(vars.LTExtt[i,j] * (vars.x[i] + dx[i] - vars.x[j] - dx[j] - 1) - (1 - vars.LTExtt[i,j]) * (vars.x[i] + dx[i] - vars.x[j] - dx[j]) + 1 <= 0,
+                            label=f'LTE_xtt_{i}_{j}')  
+        cqm.add_constraint(vars.LTEytt[i,j] * (vars.y[i] + dy[i] - vars.y[j] - dy[j] - 1) - (1 - vars.LTEytt[i,j]) * (vars.y[i] + dy[i] - vars.y[j] - dy[j]) + 1 <= 0,
+                            label=f'LTE_ytt_{i}_{j}')  
+        cqm.add_constraint(vars.LTEztt[i,j] * (vars.z[i] + dz[i] - vars.z[j] - dz[j] - 1) - (1 - vars.LTEztt[i,j]) * (vars.z[i] + dz[i] - vars.z[j] - dz[j]) + 1 <= 0,
+                            label=f'LTE_ztt_{i}_{j}')  
+        cqm.add_constraint(vars.LTExff[i,j] * (vars.x[i] - vars.x[j] - 1) - (1 - vars.LTExff[i,j]) * (vars.x[i] - vars.x[j]) + 1 <= 0,
+                            label=f'LTE_xff_{i}_{j}')
+        cqm.add_constraint(vars.LTEyff[i,j] * (vars.y[i] - vars.y[j] - 1) - (1 - vars.LTEyff[i,j]) * (vars.y[i] - vars.y[j]) + 1 <= 0,
+                            label=f'LTE_yff_{i}_{j}')
+        cqm.add_constraint(vars.LTEzff[i,j] * (vars.z[i] - vars.z[j] - 1) - (1 - vars.LTEzff[i,j]) * (vars.z[i] - vars.z[j]) + 1 <= 0,
+                            label=f'LTE_zff_{i}_{j}')
+        cqm.add_constraint(vars.LTExtf[i,j] * (vars.x[i] + dx[i] - vars.x[j] - 1) - (1 - vars.LTExtf[i,j]) * (vars.x[i] + dx[i] - vars.x[j]) + 1 <= 0,
+                            label=f'LTE_xtf_{i}_{j}')  
+        cqm.add_constraint(vars.LTEytf[i,j] * (vars.y[i] + dy[i] - vars.y[j] - 1) - (1 - vars.LTEytf[i,j]) * (vars.y[i] + dy[i] - vars.y[j]) + 1 <= 0,
+                            label=f'LTE_ytf_{i}_{j}')  
+        cqm.add_constraint(vars.LTEztf[i,j] * (vars.z[i] + dz[i] - vars.z[j] - 1) - (1 - vars.LTEztf[i,j]) * (vars.z[i] + dz[i] - vars.z[j]) + 1 <= 0,
+                            label=f'LTE_ztf_{i}_{j}')  
+        cqm.add_constraint(vars.LTExft[i,j] * (vars.x[i] - vars.x[j] - dx[j] - 1) - (1 - vars.LTExft[i,j]) * (vars.x[i] - vars.x[j] - dx[j]) + 1 <= 0,
+                            label=f'LTE_xft_{i}_{j}')
+        cqm.add_constraint(vars.LTEyft[i,j] * (vars.y[i] - vars.y[j] - dy[j] - 1) - (1 - vars.LTEyft[i,j]) * (vars.y[i] - vars.y[j] - dy[j]) + 1 <= 0,
+                            label=f'LTE_yft_{i}_{j}')
+        cqm.add_constraint(vars.LTEzft[i,j] * (vars.z[i] - vars.z[j] - dz[j] - 1) - (1 - vars.LTEzft[i,j]) * (vars.z[i] - vars.z[j] - dz[j]) + 1 <= 0,
+                            label=f'LTE_zft_{i}_{j}')
+
+
         ##### determination of 'Linear Overlap Binary' LOB x/y/z
         cqm.add_constraint(vars.LTxft[i,j] * (1 - vars.LTxtf[i,j]) + (1 - vars.LTxft[i,j]) * vars.LTxtf[i,j] - vars.LOBx[i,j] == 0, label=f'LOBx_{i}_{j}')        
         cqm.add_constraint(vars.LTyft[i,j] * (1 - vars.LTytf[i,j]) + (1 - vars.LTyft[i,j]) * vars.LTytf[i,j] - vars.LOBy[i,j] == 0, label=f'LOBy_{i}_{j}')        
@@ -232,64 +295,19 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
         ###### determination of 'Surface Overlap Binary' SOB xy/xz/yz
         cqm.add_constraint(vars.LOBx[i,j] * vars.LOBy[i,j] - vars.SOBxy[i,j] == 0, label=f'SOBxy_{i}_{j}')   
         cqm.add_constraint(vars.LOBx[i,j] * vars.LOBz[i,j] - vars.SOBxz[i,j] == 0, label=f'SOBxz_{i}_{j}')   
-        cqm.add_constraint(vars.LOBy[i,j] * vars.LOBz[i,j] - vars.SOByz[i,j] == 0, label=f'SOByz_{i}_{j}')                   
-
-        ##### determination of min/max_x/y/z_tt/ff
-        min_xtt[i,j] = (vars.x[i] + dx[i] + vars.x[j] + dx[j] + vars.LTxtt[i,j] * (vars.x[i] + dx[i] - vars.x[j] - dx[j]) 
-                                                - (1 - vars.LTxtt[i,j]) * (vars.x[i] + dx[i] - vars.x[j] - dx[j]))/2
-        min_ytt[i,j] = (vars.y[i] + dy[i] + vars.y[j] + dy[j] + vars.LTytt[i,j] * (vars.y[i] + dy[i] - vars.y[j] - dy[j]) 
-                                                - (1 - vars.LTytt[i,j]) * (vars.y[i] + dy[i] - vars.y[j] - dy[j]))/2
-        min_ztt[i,j] = (vars.z[i] + dz[i] + vars.z[j] + dz[j] + vars.LTztt[i,j] * (vars.z[i] + dz[i] - vars.z[j] - dz[j]) 
-                                                - (1 - vars.LTztt[i,j]) * (vars.z[i] + dz[i] - vars.z[j] - dz[j]))/2
-        max_xff[i,j] = (vars.x[i] + vars.x[j] + (1 - vars.LTxff[i,j]) * (vars.x[i] - vars.x[j]) 
-                                                - vars.LTxff[i,j] * (vars.x[i] - vars.x[j]))/2
-        max_yff[i,j] = (vars.y[i] + vars.y[j] + (1 - vars.LTyff[i,j]) * (vars.y[i] - vars.y[j]) 
-                                                - vars.LTyff[i,j] * (vars.y[i] - vars.y[j]))/2
-        max_zff[i,j] = (vars.z[i] + vars.z[j] + (1 - vars.LTzff[i,j])  * (vars.z[i] - vars.z[j]) 
-                                                - vars.LTzff[i,j] * (vars.z[i] - vars.z[j]))/2
-
-        ##### determination of common_x/y/z : here still negative values are possible ####
-
-        common_X[i,j] = min_xtt[i,j] - max_xff[i,j]
-        common_Y[i,j] = min_ytt[i,j] - max_yff[i,j]
-        common_Z[i,j] = min_ztt[i,j] - max_zff[i,j]  
-
-        ##### determination of 'Linear Overlap Integer' LOI x/y/z (negatives in case of non-overlap !!)    
-        cqm.add_constraint(common_X[i,j] - vars.LOIx[i,j] == 0, label=f'LOIx_{i}_{j}')  
-        cqm.add_constraint(common_Y[i,j] - vars.LOIy[i,j] == 0, label=f'LOIy_{i}_{j}')  
-        cqm.add_constraint(common_Z[i,j] - vars.LOIz[i,j] == 0, label=f'LOIz_{i}_{j}')          
+        cqm.add_constraint(vars.LOBy[i,j] * vars.LOBz[i,j] - vars.SOByz[i,j] == 0, label=f'SOByz_{i}_{j}')                       
            
         # case i is behind of case j
         cqm.add_constraint(
             - (2 - cases_on_same_bin - vars.selector[i, j, 0]) * bins.length +
             (vars.x[i] + dx[i] - vars.x[j]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_0')
-        ## case i is behind case j, and is touching (i.e. neighbour) 
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,0]*(vars.x[j]-vars.x[i]-dx[i])+(1-vars.neighbour[i,j,0])*(vars.x[j]-vars.x[j]-dx[j]+1) >= 0,
-        #    label=f'neighbour_{i}_{j}_0')
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,0]-vars.selector[i,j,0]<=0,
-        #    label=f'neighbour2_{i}_{j}_0')  
-        cqm.add_constraint(
-            vars.position[i,j,0]*(vars.x[j]-vars.x[i]-dx[i])-(1-vars.position[i,j,0])*(vars.x[j]-vars.x[i]-dx[i]+1) >= 0,
-            label=f'position_{i}_{j}_0')                                  
+            label=f'overlap_{i}_{j}_0')                           
 
         # case i is left of case j
         cqm.add_constraint(
             -(2 - cases_on_same_bin - vars.selector[i, j, 1]) * bins.width +
             (vars.y[i] + dy[i] - vars.y[j]) + 0 <= 0,
-            label=f'neighbour_{i}_{j}_1')
-        ## case i is left from case j, and is touching (i.e. neighbour) 
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,1]*(vars.y[j]-vars.y[i]-dy[i])+(1-vars.neighbour[i,j,1])*(vars.y[j]-vars.y[i]-dy[i]+1) >= 0,
-        #    label=f'neighbour_{i}_{j}_1')
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,1]-vars.selector[i,j,1]<=0,
-        #    label=f'neighbour2_{i}_{j}_1')   
-        cqm.add_constraint(
-            vars.position[i,j,1]*(vars.y[j]-vars.y[i]-dy[i])-(1-vars.position[i,j,1])*(vars.y[j]-vars.y[i]-dy[i]+1) >= 0,
-            label=f'position_{i}_{j}_1')                         
+            label=f'neighbour_{i}_{j}_1')                     
 
         # case i is below case j 
         cqm.add_constraint(
@@ -300,94 +318,67 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
         ## case i is below case j, and is touching (i.e. neighbour)          
         cqm.add_constraint(
             vars.neighbour[i,j,2]*(vars.z[j]-vars.z[i]-dz[i])-(1-vars.neighbour[i,j,2])*(vars.z[j]-vars.z[i]-dz[i]+1) >= 0,
-            #vars.neighbour[i,j,2]*(vars.z[j]-vars.z[i]-dz[i]-1)-(1-vars.neighbour[i,j,2])*(vars.z[j]-vars.z[i]-dz[i]) + 1 <= 0,
             label=f'neighbour_{i}_{j}_2')
+
         cqm.add_constraint(
             vars.neighbour[i,j,2]-vars.selector[i,j,2]<=0,
-            label=f'neighbour2_{i}_{j}_2')      
-        cqm.add_constraint(vars.neighbour[i,j,2] * vars.SOBxy[i,j] - vars.NOBxy[i,j,2] == 0, label=f'NOBxy_{i}_{j}_2')                                                       
+            label=f'neighbour2_{i}_{j}_4')      
+        cqm.add_constraint(vars.neighbour[i,j,2] * vars.SOBxy[i,j] - vars.NOBxy[i,j,2] == 0, label=f'NOBxy_{i}_{j}_2')     
+
+        cqm.add_constraint(
+            ##direct neighbour : distance = 0
+            vars.NOBxy[i,j,2] * (vars.LTEztf[i,j]-vars.LTztf[i,j]) - vars.directneighbour[i,j,2] == 0,            
+            label=f'directneighbour_{i}_{j}_2')                                                  
 
         # case i is in front of of case j
         cqm.add_constraint(
             -(2 - cases_on_same_bin - vars.selector[i, j, 3]) * bins.length +
             (vars.x[j] + dx[j] - vars.x[i]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_3')
-        ## case i is in front of of case j, and is touching (i.e. neighbour)
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,3]*(vars.x[i]-vars.x[j]-dx[j])-(1-vars.neighbour[i,j,3])*(vars.x[i]-vars.x[j]-dx[j]+1) >= 0,
-        #    label=f'neighbour_{i}_{j}_3')
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,3]-vars.selector[i,j,3]<=0,
-        #    label=f'neighbour2_{i}_{j}_3')     
-        cqm.add_constraint(
-            vars.position[i,j,3]*(vars.x[i]-vars.x[j]-dx[j])-(1-vars.position[i,j,3])*(vars.x[i]-vars.x[j]-dx[j]+1) >= 0,
-            label=f'neighbour_{i}_{j}_3')                        
+            label=f'overlap_{i}_{j}_3')                   
 
         # case i is right of case k
         cqm.add_constraint(
             -(2 - cases_on_same_bin - vars.selector[i, j, 4]) * bins.width +
             (vars.y[j] + dy[j] - vars.y[i]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_4')
-        ## case i is right of case j, and is touching (i.e. neighbour) 
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,4]*(vars.y[i]-vars.y[j]-dy[j])-(1-vars.neighbour[i,j,4])*(vars.y[i]-vars.y[j]-dy[j]+1) >= 0,
-        #    label=f'neighbour_{i}_{j}_4')
-        #cqm.add_constraint(
-        #    vars.neighbour[i,j,4]-vars.selector[i,j,4]<=0,
-        #    label=f'neighbour2_{i}_{j}_4')    
-        cqm.add_constraint(
-            vars.position[i,j,4]*(vars.y[i]-vars.y[j]-dy[j])-(1-vars.position[i,j,4])*(vars.y[i]-vars.y[j]-dy[j]+1) >= 0,
-            label=f'neighbour_{i}_{j}_4')                               
+            label=f'overlap_{i}_{j}_4')                       
 
         # case i is above case j
         cqm.add_constraint(
             -(2 - cases_on_same_bin - vars.selector[i, j, 5]) * bins.height +
             (vars.z[j] + dz[j] - vars.z[i] ) + 0 <= 0,    
             label=f'overlap_{i}_{j}_5')   
-
         # case i is above case j, and is touching (i.e. neighbour)           
         cqm.add_constraint(
             vars.neighbour[i,j,5]*(vars.z[i]-vars.z[j]-dz[j])-(1-vars.neighbour[i,j,5])*(vars.z[i]-vars.z[j]-dz[j]+1) >= 0,
-            # vars.neighbour[i,j,5]*(vars.z[i]-vars.z[j]-dz[j]-1)-(1-vars.neighbour[i,j,5])*(vars.z[i]-vars.z[j]-dz[j]) + 1 <= 0,
+            ##revised towards maximum 5 cm distance
+            ##(1-vars.neighbour[i,j,5])*(5-(vars.z[i]-vars.z[j]-dz[j])) - vars.neighbour[i,j,5]*(6 - (vars.z[i]-vars.z[j]-dz[j])) + 1 <= 0,
             label=f'neighbour_{i}_{j}_5')
         cqm.add_constraint(
             vars.neighbour[i,j,5]-vars.selector[i,j,5]<=0,
             label=f'neighbour2_{i}_{j}_5')
-        cqm.add_constraint(vars.neighbour[i,j,5] * vars.SOBxy[i,j] - vars.NOBxy[i,j,5] == 0, label=f'NOBxy_{i}_{j}_5')             
+        cqm.add_constraint(vars.neighbour[i,j,5] * vars.SOBxy[i,j] - vars.NOBxy[i,j,5] == 0, label=f'NOBxy_{i}_{j}_5')   
+        cqm.add_constraint(
+            ##direct neighbour : distance = 0
+            vars.NOBxy[i,j,5] * (vars.LTEzft[i,j]-vars.LTzft[i,j]) - vars.directneighbour[i,j,5] == 0,            
+            label=f'directneighbour_{i}_{j}_5')                   
 
 
 def _add_stacking_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                                bins: Bins, cases: Cases,
                                effective_dimensions: list):
     num_cases = cases.num_cases
-    #dx, dy, dz, x2, y2, z2 = effective_dimensions
 
-    for k in range(num_cases):
+    for i, j in  combinations(range(num_cases), r=2):
+        ### IF directneighbour == 1 (i.e. z-direction touching items), then the 'above' item should fit the below item 
+        cqm.add_constraint((vars.directneighbour[i,j,2])*(2 - vars.LTExff[i,j] - (1 - vars.LTxtt[i,j])) - vars.testx[i,j,2] == 0, label=f'pyramid_x_{i}_{j}_{2}')
+        cqm.add_constraint((vars.directneighbour[i,j,5])*(2 - (1 - vars.LTxff[i,j]) - vars.LTExtt[i,j]) - vars.testx[i,j,5] == 0, label=f'pyramid_x_{i}_{j}_{5}')      
+        cqm.add_constraint((vars.directneighbour[i,j,2])*(2 - vars.LTEyff[i,j] - (1 - vars.LTytt[i,j])) - vars.testy[i,j,2] == 0, label=f'pyramid_y_{i}_{j}_{2}')
+        cqm.add_constraint((vars.directneighbour[i,j,5])*(2 - (1 - vars.LTyff[i,j]) - vars.LTEytt[i,j]) - vars.testy[i,j,5] == 0, label=f'pyramid_y_{i}_{j}_{5}')
 
-        ## eerst enkele test-constraints om te kijken of berekeningen correct verlopen
-        cqm.add_constraint(vars.QSLOIx2[k] - quicksum([vars.LOIx[i, k]*vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]]) == 0, label=f'test_QSLOIx2_{k}')
-        cqm.add_constraint(vars.QSLOIx5[k] - quicksum([vars.LOIx[k, j]*vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]]) == 0, label=f'test_QSLOIx5_{k}')
-        cqm.add_constraint(vars.QSLOIy2[k] - quicksum([vars.LOIy[i, k]*vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]]) == 0, label=f'test_QSLOIy2_{k}')
-        cqm.add_constraint(vars.QSLOIy5[k] - quicksum([vars.LOIy[k, j]*vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]]) == 0, label=f'test_QSLOIy5_{k}')
-        cqm.add_constraint(vars.QStest2[k] + 
-                                          quicksum([vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]]) 
-                                          == 0, label=f'test_test2_{k}')
-        cqm.add_constraint(vars.QStest5[k] + 
-                                          quicksum([vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]])
-                                          == 0, label=f'test_test5_{k}')                                                                                
-                ##cases.length[k] * cases.width[k] *
-
-        #cqm.add_constraint(vars.floor[k] * 50000 
-        #                        + quicksum([vars.LOIx[i, k]*vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]])
-        #                        + quicksum([vars.LOIx[k, j]*vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]])
-        #                        + quicksum([vars.LOIy[i, k]*vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]])
-        #                        + quicksum([vars.LOIy[k, j]*vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]])
-        #                        - 0.99 * cases.length[k] * cases.width[k] *
-        #                                  (quicksum([vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]]) 
-        #                                 + quicksum([vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]]))
-        #                        -1
-        #                       >= 0,
-        #                   label=f'stacking_98_{k}')
+    #for k in range(num_cases):
+    #    ## ofwel staat item[k] op de bodem, ofwel op een andere pallet
+    #    cqm.add_constraint((quicksum([vars.NOBxy[i,k,2] for i in [i for (i, j) in combinations(range(num_cases), r=2) if j == k]]) 
+    #                                     + quicksum([vars.NOBxy[k,j,5] for j in [j for (i, j) in combinations(range(num_cases), r=2) if i == k]])) == 1, label=f'test_{k}')
 
 
 def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
@@ -417,14 +408,16 @@ def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
 
     obj_COG_X = ((quicksum((vars.x[i] + dx[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_X) ** 2 ) 
     obj_COG_Y = ((quicksum((vars.y[i] + dy[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_Y) ** 2 ) 
-    obj_COG_Z = ((quicksum((vars.z[i]) * cases.weight[i] for i in range(num_cases)) ** 2 ) / (quicksum(cases.weight[i] for i in range(num_cases))) ** 2 )
+    obj_COG_Z = ((quicksum((vars.z[i] + dz[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - 0) ** 2 )
+    #obj_test = quicksum((1-vars.test[i]) for i in range(num_cases))
 
     first_obj_coefficient = 1
     second_obj_coefficient = 1
-    third_obj_coefficient = 1
+    third_obj_coefficient = 100
     cqm.set_objective(first_obj_coefficient  * obj_COG_X +
                       second_obj_coefficient * obj_COG_Y +
-                      third_obj_coefficient  * obj_COG_Z)
+                      third_obj_coefficient  * obj_COG_Z) 
+    cqm.set_objective(obj_COG_Z)                       
 
 
 def build_cqm(vars: Variables, bins: Bins,
@@ -443,8 +436,8 @@ def build_cqm(vars: Variables, bins: Bins,
     
     """
     cqm = ConstrainedQuadraticModel()
+    _initialisation_constraints(cqm, vars, cases)
     effective_dimensions = _add_orientation_constraints(cqm, vars, cases)
-    ### effective_overlapping = _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
     _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
     _add_boundary_constraints(cqm, vars, bins, cases, effective_dimensions)
     _add_stacking_constraints(cqm, vars, bins, cases, effective_dimensions)
