@@ -69,54 +69,51 @@ class Variables:
     def __init__(self, cases: Cases, bins: Bins):
         num_cases = cases.num_cases
 
-        self.x = {i: Integer(f'x_{i}', lower_bound=0, upper_bound=bins.length)
-                  for i in range(num_cases)}
-        self.y = {i: Integer(f'y_{i}', lower_bound=0, upper_bound=bins.width)
-                  for i in range(num_cases)}
-        self.z = {i: Integer(f'z_{i}', lower_bound=0, upper_bound=bins.height)
-                  for i in range(num_cases)}       
-        self.o = {(i, k): Binary(f'o_{i}_{k}') for i in range(num_cases)
-                  for k in [0,2]}
-        self.selector = {(i, j, k): Binary(f'sel_{i}_{j}_{k}')
-                         for i, j in combinations(range(num_cases), r=2)
-                         for k in range(6)}                                                        
+        # Position
+        self.P = {(i,x,y,z): Binary(f'P_{i,x,y,z}') for i in range(num_cases) 
+                                                    for x in range(bins.length)
+                                                    for y in range(bins.width)
+                                                    for z in range(bins.height)}  
 
-def _initialisation_constraints(cqm: ConstrainedQuadraticModel,
-                                 vars: Variables, cases: Cases) -> list:
+        # Rotation
+        self.R = {i        : Binary(f'r_{i}') for i in range(num_cases)}                                                      
 
-    cqm.add_constraint( vars.x[0] == 0, label=f'x_{0}') 
-    cqm.add_constraint( vars.y[0] == 0, label=f'y_{0}') 
-    cqm.add_constraint( vars.z[0] == 0, label=f'z_{0}') 
+#def _initialisation_constraints(cqm: ConstrainedQuadraticModel,
+#                                 vars: Variables, cases: Cases) -> list:
+
+#    cqm.add_constraint( vars.x[0] == 0, label=f'x_{0}') 
+#    cqm.add_constraint( vars.y[0] == 0, label=f'y_{0}') 
+#    cqm.add_constraint( vars.z[0] == 0, label=f'z_{0}') 
 
 
-def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
-                                 vars: Variables, cases: Cases) -> list:
-    num_cases = cases.num_cases
-    dx = {}
-    dy = {}
-    dz = {}
-    x2 = {}
-    y2 = {}
-    z2 = {}
-    for i in range(num_cases):
-        p1 = list(
-            permutations([cases.length[i], cases.width[i], cases.height[i]]))
-        dx[i] = 0
-        dy[i] = 0
-        dz[i] = 0
-        for j, (a, b, c) in enumerate(p1):
-            if (j == 0 or j == 2):      # only rotations around z-axis is potentially feasible in all our cases
-                dx[i] += a * vars.o[i, j]
-                dy[i] += b * vars.o[i, j]
-                dz[i] += c * vars.o[i, j]
-        x2[i] = vars.x[i] + dx[i]
-        y2[i] = vars.y[i] + dy[i]
-        z2[i] = vars.z[i] + dz[i]
-
-    for i in range(num_cases):
-        cqm.add_discrete(quicksum([vars.o[i, k] for k in [0,2]]),
-                         label=f'orientation_{i}')
-    return [dx, dy, dz, x2, y2, z2]
+#def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
+#                                 vars: Variables, cases: Cases) -> list:
+#    num_cases = cases.num_cases
+#    dx = {}
+#    dy = {}
+#    dz = {}
+#    x2 = {}
+#    y2 = {}
+#    z2 = {}
+#    for i in range(num_cases):
+#        p1 = list(
+#            permutations([cases.length[i], cases.width[i], cases.height[i]]))
+#        dx[i] = 0
+#        dy[i] = 0
+#        dz[i] = 0
+#        for j, (a, b, c) in enumerate(p1):
+#            if (j == 0 or j == 2):      # only rotations around z-axis is potentially feasible in all our cases
+#                dx[i] += a * vars.o[i, j]
+#                dy[i] += b * vars.o[i, j]
+#                dz[i] += c * vars.o[i, j]
+#        x2[i] = vars.x[i] + dx[i]
+#        y2[i] = vars.y[i] + dy[i]
+#        z2[i] = vars.z[i] + dz[i]
+#
+#    for i in range(num_cases):
+#        cqm.add_discrete(quicksum([vars.o[i, k] for k in [0,2]]),
+#                         label=f'orientation_{i}')
+#    return [dx, dy, dz, x2, y2, z2]
 
 
 def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
@@ -124,92 +121,81 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                                effective_dimensions: list):
     num_cases = cases.num_cases
     dx, dy, dz, x2, y2, z2 = effective_dimensions
+    #case_volume = quicksum(cases.length[i] * cases.width[i] * cases.height[i] for i in range(num_cases))
 
-    max_xff = {}
-    min_xtt = {}
-    max_yff = {}
-    min_ytt = {}
-    max_zff = {}
-    min_ztt = {}    
+    # Constraint 1 : each case need to be packed in the bin
+    for i in range(num_cases): 
+        cqm.add_constraint(sum([vars.P[i,x,y,z] for x in range(bins.length) 
+                                                for y in range(bins.width) 
+                                                for z in range(bins.height)]) - cases.length[i] * cases.width[i] * cases.height[i] == 0,
+                           label=f'constraint1_{i}')
 
-    for i, j in combinations(range(num_cases), r=2):
-        cqm.add_constraint(sum([vars.selector[i,j,s] for s in range(6)]) >= 1,
-                         label=f'selector_{i}_{j}')
+    # Constraint 2 : each position can not be filled with more than 1 case
+    for x, y, z in [(x,y,z) for x in range(bins.length) for y in range(bins.width) for z in range(bins.height)]:
+        cqm.add_constraint(sum([vars.P[i,x,y,z] for i in range(num_cases)]) <= 1,
+                           label=f'constraint2_{x}_{y}_{z}')
 
-        cases_on_same_bin = 1                   
-           
-        # case i is behind of case j
-        cqm.add_constraint(
-            - (2 - cases_on_same_bin - vars.selector[i, j, 0]) * bins.length +
-            (vars.x[i] + dx[i] - vars.x[j]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_0')                           
+    ## Constraint 3 : make sure the case is in cuboid shape, also taken rotation into account
+    #for i in range(num_cases):
+    #    for y, z in [(y,z) for y in range(bins.width) for z in range(bins.height)]:
+    #        cqm.add_constraint(
+    #            
+    #            sum([vars.P[i,x,y,z] for x in range(bins.length)]) *
+    #            (sum([vars.P[i,x,y,z] for x in range(bins.length)]) - cases.length[i] * vars.R[i]
+    #                                                                - cases.width[i]  * (1 - vars.R[i])) == 0,
+    #                        label=f'constraint3x_{i}_{y}_{z}')  
 
-        # case i is left of case j
-        cqm.add_constraint(
-            -(2 - cases_on_same_bin - vars.selector[i, j, 1]) * bins.width +
-            (vars.y[i] + dy[i] - vars.y[j]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_1')                     
+    #    for x, z in [(x,z) for x in range(bins.length) for z in range(bins.height)]:
+    #        cqm.add_constraint(
+    #            
+    #            sum([vars.P[i,x,y,z] for y in range(bins.width)]) *
+    #            (sum([vars.P[i,x,y,z] for y in range(bins.width)]) - cases.width[i]  * vars.R[i]
+    #                                                               - cases.length[i] * (1 - vars.R[i])) == 0,
+    #                        label=f'constraint3y_{i}_{x}_{z}')  
 
-        # case i is below case j 
-        cqm.add_constraint(
-            -(2 - cases_on_same_bin - vars.selector[i, j, 2]) * bins.height +
-            (vars.z[i] + dz[i] - vars.z[j] ) + 0 <= 0,    
-            label=f'overlap_{i}_{j}_2')                                                
+    #    for x, y in [(x,y) for x in range(bins.length) for y in range(bins.width)]:
+    #        cqm.add_constraint(
+    #            
+    #            sum([vars.P[i,x,y,z] for z in range(bins.height)]) *
+    #            (sum([vars.P[i,x,y,z] for z in range(bins.height)]) - cases.height[i]) == 0,
+    #                        label=f'constraint3z_{i}_{x}_{y}')                                  
 
-        # case i is in front of of case j
-        cqm.add_constraint(
-            -(2 - cases_on_same_bin - vars.selector[i, j, 3]) * bins.length +
-            (vars.x[j] + dx[j] - vars.x[i]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_3')                   
+#def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
+#                              bins: Bins, cases: Cases,
+#                              effective_dimensions: list):
+#    num_cases = cases.num_cases
+#    dx, dy, dz, x2, y2, z2 = effective_dimensions
+#    for i in range(num_cases):
+#
+#        cqm.add_constraint(vars.x[i] + dx[i] - bins.length <= 0,
+#                            label=f'maxx_{i}_less')
+#
+#        cqm.add_constraint(vars.y[i] + dy[i] - bins.width <= 0,
+#                            label=f'maxy_{i}_less')
+#
+#        cqm.add_constraint(vars.z[i] + dz[i] - bins.height <= 0,
+#                            label=f'maxx_height_{i}')                            
 
-        # case i is right of case k
-        cqm.add_constraint(
-            -(2 - cases_on_same_bin - vars.selector[i, j, 4]) * bins.width +
-            (vars.y[j] + dy[j] - vars.y[i]) + 0 <= 0,
-            label=f'overlap_{i}_{j}_4')                       
-
-        # case i is above case j
-        cqm.add_constraint(
-            -(2 - cases_on_same_bin - vars.selector[i, j, 5]) * bins.height +
-            (vars.z[j] + dz[j] - vars.z[i] ) + 0 <= 0,    
-            label=f'overlap_{i}_{j}_5')               
-
-def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
-                              bins: Bins, cases: Cases,
-                              effective_dimensions: list):
-    num_cases = cases.num_cases
-    dx, dy, dz, x2, y2, z2 = effective_dimensions
-    for i in range(num_cases):
-
-        cqm.add_constraint(vars.x[i] + dx[i] - bins.length <= 0,
-                            label=f'maxx_{i}_less')
-
-        cqm.add_constraint(vars.y[i] + dy[i] - bins.width <= 0,
-                            label=f'maxy_{i}_less')
-
-        cqm.add_constraint(vars.z[i] + dz[i] - bins.height <= 0,
-                            label=f'maxx_height_{i}')                            
-
-def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
-                      bins: Bins, cases: Cases, effective_dimensions: list):
-    num_cases = cases.num_cases
-    dx, dy, dz, x2, y2, z2 = effective_dimensions
-    
-    target_X = bins.target_X
-    target_Y = bins.width / 2
-    target_Z = quicksum(cases.weight[i] * cases.height[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) / 2
-
-    obj_COG_X = ((quicksum((vars.x[i] + dx[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_X) ** 2 ) 
-    obj_COG_Y = ((quicksum((vars.y[i] + dy[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_Y) ** 2 ) 
-    obj_COG_Z = ((quicksum((vars.z[i] + dz[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - 0) ** 2 )
-
-    first_obj_coefficient = 1
-    second_obj_coefficient = 1
-    third_obj_coefficient = 100
-    cqm.set_objective(first_obj_coefficient  * obj_COG_X +
-                      second_obj_coefficient * obj_COG_Y +
-                      third_obj_coefficient  * obj_COG_Z) 
-    cqm.set_objective(obj_COG_Z)                       
+#def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
+#                      bins: Bins, cases: Cases, effective_dimensions: list):
+#    num_cases = cases.num_cases
+#    dx, dy, dz, x2, y2, z2 = effective_dimensions
+#    
+#    target_X = bins.target_X
+#    target_Y = bins.width / 2
+#    target_Z = quicksum(cases.weight[i] * cases.height[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) / 2
+#
+#    obj_COG_X = ((quicksum((vars.x[i] + dx[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_X) ** 2 ) 
+#    obj_COG_Y = ((quicksum((vars.y[i] + dy[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - target_Y) ** 2 ) 
+#    obj_COG_Z = ((quicksum((vars.z[i] + dz[i]/2 ) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases)) - 0) ** 2 )
+#
+#    first_obj_coefficient = 1
+#    second_obj_coefficient = 1
+#    third_obj_coefficient = 100
+#    cqm.set_objective(first_obj_coefficient  * obj_COG_X +
+#                      second_obj_coefficient * obj_COG_Y +
+#                      third_obj_coefficient  * obj_COG_Z) 
+#    cqm.set_objective(obj_COG_Z)                       
 
 
 def build_cqm(vars: Variables, bins: Bins,
@@ -228,11 +214,12 @@ def build_cqm(vars: Variables, bins: Bins,
     
     """
     cqm = ConstrainedQuadraticModel()
-    _initialisation_constraints(cqm, vars, cases)
-    effective_dimensions = _add_orientation_constraints(cqm, vars, cases)
+ #   _initialisation_constraints(cqm, vars, cases)
+ #   effective_dimensions = _add_orientation_constraints(cqm, vars, cases)
+    effective_dimensions =[0, 0, 0, 0, 0, 0]  # just to keep my code running (16/11/2023)
     _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
-    _add_boundary_constraints(cqm, vars, bins, cases, effective_dimensions)
-    _define_objective(cqm, vars, bins, cases, effective_dimensions)
+ #   _add_boundary_constraints(cqm, vars, bins, cases, effective_dimensions)
+ #   _define_objective(cqm, vars, bins, cases, effective_dimensions)
 
     return cqm, effective_dimensions
 
@@ -322,10 +309,24 @@ if __name__ == '__main__':
         write_solution_to_file(output_filepath, cqm, vars, best_feasible, 
                                cases, bins, effective_dimensions)
 
-    fig = plot_cuboids(best_feasible, vars, cases,
-                       bins, effective_dimensions, color_coded)
+    positions = []
+    sizes = []
+    results = []
+    for i, x, y, z in [(i,x,y,z) for i in range(num_cases) for x in bins.length for y in bins.width for z in bins.height]:
+        results.append([i, x, y, z, vars.P[i,x,y,z].energy(sample)])
+    pdf_results = pd.DataFrame
 
-    if html_filepath is not None:
-        fig.write_html(html_filepath)
 
-    fig.show()
+        positions.append(
+            (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
+        sizes.append((cases.length[i],
+                      cases.width[i],
+                      cases.height[i]))
+
+#    fig = plot_cuboids(best_feasible, vars, cases,
+#                       bins, effective_dimensions, color_coded, positions, sizes)
+#
+#    if html_filepath is not None:
+#        fig.write_html(html_filepath)
+#
+#    fig.show()

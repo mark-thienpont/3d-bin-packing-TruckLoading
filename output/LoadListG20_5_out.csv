@@ -1,0 +1,14 @@
+# Number of bins used: 1
+# Number of cases packed: 5
+# Objective value: 5.083
+
+# COG_X: 11.0
+# COG_Y: 1.0
+# COG_Z: 2.0
+  case_id    orientation    x    y    z    x'    y'    z'    dx    dy    dz
+---------  -------------  ---  ---  ---  ----  ----  ----  ----  ----  ----
+        1              1    0    0    0    12     2     4    12     2     4
+        2              1    0    4    0    12     6     4    12     2     4
+        3              1    1    2    0    13     4     4    12     2     4
+        4              1    1    2    4    13     4     8    12     2     4
+        5              3   12    4    0    13     6     4     1     2     4

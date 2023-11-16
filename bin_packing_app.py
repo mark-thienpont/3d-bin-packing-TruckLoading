@@ -52,10 +52,19 @@ def _solve_bin_packing_instance(data: dict,
 
     best_feasible = call_solver(cqm, time_limit, use_cqm_solver)
 
-    plotly_fig = plot_cuboids(best_feasible, model_variables, cases,
-                              bins, effective_dimensions, color_coded)
+    positions = []
+    sizes = []
+    for i in range(num_cases):
+        positions.append(
+            (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
+        sizes.append((cases.length[i],
+                      cases.width[i],
+                      cases.height[i]))
 
-    st.plotly_chart(plotly_fig, **st_plotly_kwargs)
+    plotly_fig = plot_cuboids(best_feasible, model_variables, cases,
+                              bins, effective_dimensions, color_coded, positions, sizes)
+
+#    st.plotly_chart(plotly_fig, **st_plotly_kwargs)
 
     st.code(_get_cqm_stats(cqm))
 
@@ -78,7 +87,7 @@ use_cqm_solver = True
 
 if run_type == "File upload":
     problem_filepath = st.sidebar.text_input(label="Problem instance file",
-                                             value="input/LoadList_4.csv")
+                                             value="input/LoadListG20_5_in.csv")
     time_limit = st.sidebar.number_input(label="Hybrid solver time limit (S)",
                                          value=5)
 
@@ -86,7 +95,7 @@ if run_type == "File upload":
     display_input = False
     write_to_file = True
     solution_filename = st.sidebar.text_input(label="Solution filename", 
-                                              value = "output/LoadList_4.csv")
+                                              value = "output/LoadListG20_5_out.csv")
 
     run_button = st.sidebar.button("Run")
 

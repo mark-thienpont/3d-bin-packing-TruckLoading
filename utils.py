@@ -134,7 +134,7 @@ def _get_colors(case_ids: np.array) -> list:
 
 def plot_cuboids(sample: dimod.SampleSet, vars: "Variables",
                  cases: "Cases", bins: "Bins", effective_dimensions: list,
-                 color_coded: bool = True) -> go.Figure:
+                 color_coded: bool = True, positions: list, sizes: list) -> go.Figure:
     """Visualization utility tool to view 3D bin packing solution.
 
     Args:
@@ -152,15 +152,15 @@ def plot_cuboids(sample: dimod.SampleSet, vars: "Variables",
     dx, dy, dz, x2, y2, z2 = effective_dimensions
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    positions = []
-    sizes = []
-    for i in range(num_cases):
-        positions.append(
-            (vars.x[i].energy(sample), vars.y[i].energy(sample),
-             vars.z[i].energy(sample)))
-        sizes.append((dx[i].energy(sample),
-                      dy[i].energy(sample),
-                      dz[i].energy(sample)))
+    #positions = []
+    #sizes = []
+    #for i in range(num_cases):
+    #    positions.append(
+    #        (vars.x[i].energy(sample), vars.y[i].energy(sample),
+    #         vars.z[i].energy(sample)))
+    #    sizes.append((dx[i].energy(sample),
+    #                  dy[i].energy(sample),
+    #                  dz[i].energy(sample)))
     fig = _plot_cuboids(positions, sizes, bins.length * num_bins,
                         bins.width, bins.height, color_coded, cases.case_ids)
     for i in range(num_bins):
@@ -205,14 +205,14 @@ def read_instance(instance_path: str) -> dict:
             case_info = list(map(int, line.split()))
             if i == 0:
                 data["num_bins"] = case_info[1]
-                data["bin_dimensions"] = [int(round(case_info[2]/10,0)), int(round(case_info[3]/10,0)), int(round(case_info[4]/10,0))]
+                data["bin_dimensions"] = [int(round(case_info[2],0)), int(round(case_info[3],0)), int(round(case_info[4],0))]
                 data["target_X"] = int(round(case_info[5]/10,0))
             else:
                 data["case_ids"].append(case_info[0])
                 data["quantity"].append(case_info[1])
-                data["case_length"].append(int(round(case_info[2]/10,0)))
-                data["case_width"].append(int(round(case_info[3]/10,0)))
-                data["case_height"].append(int(round(case_info[4]/10,0)))
+                data["case_length"].append(int(round(case_info[2],0)))
+                data["case_width"].append(int(round(case_info[3],0)))
+                data["case_height"].append(int(round(case_info[4],0)))
                 data["case_weight"].append(case_info[5])
 
         return data
@@ -241,12 +241,12 @@ def write_solution_to_file(solution_file_path: str,
     """
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    dx, dy, dz, x2, y2, z2 = effective_dimensions
+    #dx, dy, dz, x2, y2, z2 = effective_dimensions
 
-    # calculated resulting COG_X, COG_Y, and COG_Z
-    COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
-    COG_Y = quicksum((vars.y[i].energy(sample) + dy[i].energy(sample)/2 - bins.width / 2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
-    COG_Z = quicksum((vars.z[i].energy(sample) + dz[i].energy(sample)/2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+    ## calculated resulting COG_X, COG_Y, and COG_Z
+    #COG_X = quicksum((vars.x[i].energy(sample) + dx[i].energy(sample)/2 - bins.target_X) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+    #COG_Y = quicksum((vars.y[i].energy(sample) + dy[i].energy(sample)/2 - bins.width / 2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
+    #COG_Z = quicksum((vars.z[i].energy(sample) + dz[i].energy(sample)/2) * cases.weight[i] for i in range(num_cases)) / quicksum(cases.weight[i] for i in range(num_cases))
 
     if num_bins > 1:
         num_bin_used = sum([vars.bin_on[j].energy(sample)
@@ -254,54 +254,24 @@ def write_solution_to_file(solution_file_path: str,
     else:
         num_bin_used = 1
 
-    objective_value = cqm.objective.energy(sample)
-    vs = [['case_id', 'orientation', 'x', 'y', 'z', "x'",
-           "y'", "z'", 'dx', 'dy', 'dz']]
-    for i in range(num_cases):
-        vs.append([cases.case_ids[i],
-                   int(sum((r + 1) * vars.o[i, r].energy(sample) for r in
-                           [0,2])),
-                   np.round(vars.x[i].energy(sample), 2),
-                   np.round(vars.y[i].energy(sample), 2),
-                   np.round(vars.z[i].energy(sample), 2),
-                   np.round(x2[i].energy(sample), 2),
-                   np.round(y2[i].energy(sample), 2),
-                   np.round(z2[i].energy(sample), 2),
-                   np.round(dx[i].energy(sample), 2),
-                   np.round(dy[i].energy(sample), 2),
-                   np.round(dz[i].energy(sample), 2),
-                   ])
+    #objective_value = cqm.objective.energy(sample)
 
-    #vs3 = [['case_i', 'case_k', 'direction', 'directneighbour']]
-    #for i, j in combinations(range(num_cases), r=2):
-    #    for s in [2,5]:
-    #        vs3.append([cases.case_ids[i], cases.case_ids[j], s, vars.directneighbour[i,j,s].energy(sample)])
+    vs = [['case_id', 'x', 'y', 'z', 'Position', 'Rotation']]
 
-    #vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'directneighbour', 'testx', 'testy', 'SOBxy', 'NOBxy2', 'NOBxy5', 'LTxff', 'LTxtt', 'LTyff', 'LTytt', 'LTEztf', 'LTztf']]
-    #for i, j in combinations(range(num_cases), r=2):
-    #    for s in [2,5]:
-    #        if (vars.NOBxy[i,j,s].energy(sample) == 1):
-    #            vs4.append([cases.case_ids[i], 
-    #                        cases.case_ids[j], 
-    #                        s,      
-    #                        ])
+    for i,x,y,z in [(i,x,y,z) for i in range(num_cases)
+                              for x in range(bins.length)
+                              for y in range(bins.width)
+                              for z in range(bins.height)]:
+        vs.append([cases.case_ids[i], x, y, z, vars.P[i,x,y,z].energy(sample), 0 ]) #vars.R[i].energy(sample)])
 
-    ##vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
-    ##for i, k in combinations(range(num_cases), r=2):
-    ##    vs5.append([cases.case_ids[i], cases.case_ids[k], np.round(max_xf[i,k].energy(sample),2), 
-    ##                                                      np.round(min_xt[i,k].energy(sample),2), 
-    ##                                                      np.round(max_yf[i,k].energy(sample),2), 
-    ##                                                      np.round(min_xt[i,k].energy(sample),2), 
-    ##                                                      np.round(max_zf[i,k].energy(sample),2), 
-    ##                                                      np.round(min_zt[i,k].energy(sample),2)]) 
 
     with open(solution_file_path, 'w') as f:
         f.write('# Number of bins used: ' + str(int(num_bin_used)) + '\n')
         f.write('# Number of cases packed: ' + str(int(num_cases)) + '\n')
-        f.write('# Objective value: ' + str(np.round(objective_value, 3)) + '\n\n')
-        f.write('# COG_X: ' + str(np.round(COG_X, 0)) + '\n')
-        f.write('# COG_Y: ' + str(np.round(COG_Y, 0)) + '\n')
-        f.write('# COG_Z: ' + str(np.round(COG_Z, 0)) + '\n')
+        #f.write('# Objective value: ' + str(np.round(objective_value, 3)) + '\n\n')
+        #f.write('# COG_X: ' + str(np.round(COG_X, 0)) + '\n')
+        #f.write('# COG_Y: ' + str(np.round(COG_Y, 0)) + '\n')
+        #f.write('# COG_Z: ' + str(np.round(COG_Z, 0)) + '\n')
 
         f.write(tabulate(vs, headers="firstrow"))
         f.write('\n')
