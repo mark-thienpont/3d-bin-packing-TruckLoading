@@ -255,7 +255,7 @@ def write_solution_to_file(solution_file_path: str,
         num_bin_used = 1
 
     objective_value = cqm.objective.energy(sample)
-    vs = [['case_id', 'orientation', 'x', 'y', 'z', 'floor', "x'",
+    vs = [['case_id', 'orientation', 'x', 'y', 'z', "x'",
            "y'", "z'", 'dx', 'dy', 'dz']]
     for i in range(num_cases):
         vs.append([cases.case_ids[i],
@@ -264,47 +264,27 @@ def write_solution_to_file(solution_file_path: str,
                    np.round(vars.x[i].energy(sample), 2),
                    np.round(vars.y[i].energy(sample), 2),
                    np.round(vars.z[i].energy(sample), 2),
-                   vars.floor[i].energy(sample),
                    np.round(x2[i].energy(sample), 2),
                    np.round(y2[i].energy(sample), 2),
                    np.round(z2[i].energy(sample), 2),
                    np.round(dx[i].energy(sample), 2),
                    np.round(dy[i].energy(sample), 2),
                    np.round(dz[i].energy(sample), 2),
-                   #np.round(vars.QSLOIx2[i].energy(sample), 2),
-                   #np.round(vars.QSLOIx5[i].energy(sample), 2),
-                   #np.round(vars.QSLOIy2[i].energy(sample), 2),
-                   #np.round(vars.QSLOIy5[i].energy(sample), 2)
                    ])
 
-    vs3 = [['case_i', 'case_k', 'direction', 'directneighbour']]
-    for i, j in combinations(range(num_cases), r=2):
-        for s in [2,5]:
-            vs3.append([cases.case_ids[i], cases.case_ids[j], s, vars.directneighbour[i,j,s].energy(sample)])
+    #vs3 = [['case_i', 'case_k', 'direction', 'directneighbour']]
+    #for i, j in combinations(range(num_cases), r=2):
+    #    for s in [2,5]:
+    #        vs3.append([cases.case_ids[i], cases.case_ids[j], s, vars.directneighbour[i,j,s].energy(sample)])
 
-    vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'directneighbour', 'testx', 'testy', 'SOBxy', 'NOBxy2', 'NOBxy5', 'LTxff', 'LTxtt', 'LTyff', 'LTytt', 'LTEztf', 'LTztf']]
-    for i, j in combinations(range(num_cases), r=2):
-        for s in [2,5]:
-            if (vars.NOBxy[i,j,s].energy(sample) == 1):
-                vs4.append([cases.case_ids[i], 
-                            cases.case_ids[j], 
-                            s,      
-                            vars.neighbour[i,j,s].energy(sample), 
-                            vars.directneighbour[i,j,s].energy(sample),                       
-                            #vars.LOIx[i,j].energy(sample),
-                            #vars.LOIy[i,j].energy(sample),
-                            vars.testx[i,j].energy(sample),
-                            vars.testy[i,j].energy(sample),
-                            vars.SOBxy[i,j].energy(sample),
-                            vars.NOBxy[i,j,2].energy(sample),
-                            vars.NOBxy[i,j,5].energy(sample),
-                            vars.LTxff[i,j].energy(sample),
-                            vars.LTxtt[i,j].energy(sample),
-                            vars.LTyff[i,j].energy(sample),
-                            vars.LTytt[i,j].energy(sample),
-                            vars.LTEztf[i,j].energy(sample),
-                            vars.LTztf[i,j].energy(sample)
-                            ])
+    #vs4 = [['case_i', 'case_k', 'direction', 'neighbour', 'directneighbour', 'testx', 'testy', 'SOBxy', 'NOBxy2', 'NOBxy5', 'LTxff', 'LTxtt', 'LTyff', 'LTytt', 'LTEztf', 'LTztf']]
+    #for i, j in combinations(range(num_cases), r=2):
+    #    for s in [2,5]:
+    #        if (vars.NOBxy[i,j,s].energy(sample) == 1):
+    #            vs4.append([cases.case_ids[i], 
+    #                        cases.case_ids[j], 
+    #                        s,      
+    #                        ])
 
     ##vs5 = [['case_i', 'case_k', 'max_xf', 'min_xt', 'max_yf', 'min_xt', 'max_zf', 'min_zt']]
     ##for i, k in combinations(range(num_cases), r=2):
@@ -327,10 +307,10 @@ def write_solution_to_file(solution_file_path: str,
         f.write('\n')
         ##f.write(tabulate(vs2, headers="firstrow"))
         ##f.write('\n')
-        f.write(tabulate(vs3, headers="firstrow"))
-        f.write('\n')
-        f.write(tabulate(vs4, headers="firstrow"))
-        f.write('\n')
+        #f.write(tabulate(vs3, headers="firstrow"))
+        #f.write('\n')
+        #f.write(tabulate(vs4, headers="firstrow"))
+        #f.write('\n')
         ##f.write(tabulate(vs5, headers="firstrow"))
         ##f.write('\n')        
         f.close()
