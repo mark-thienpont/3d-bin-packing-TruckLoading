@@ -14,6 +14,7 @@
 
 from io import StringIO
 import numpy as np
+import pandas as pd
 import sys
 import streamlit as st
 from typing import Optional

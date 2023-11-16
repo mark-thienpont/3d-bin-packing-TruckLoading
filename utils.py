@@ -16,6 +16,7 @@ import os
 import plotly.colors as colors
 import plotly.graph_objects as go
 import numpy as np
+import pandas as pd
 from tabulate import tabulate
 from typing import List, Optional, TYPE_CHECKING
 import dimod

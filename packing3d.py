@@ -18,6 +18,7 @@ from dwave.system import LeapHybridCQMSampler
 from itertools import combinations, permutations
 import numpy as np
 from typing import Tuple
+import pandas as pd
 
 from utils import print_cqm_stats, plot_cuboids
 from utils import read_instance, write_solution_to_file
@@ -314,8 +315,10 @@ if __name__ == '__main__':
     results = []
     for i, x, y, z in [(i,x,y,z) for i in range(num_cases) for x in bins.length for y in bins.width for z in bins.height]:
         results.append([i, x, y, z, vars.P[i,x,y,z].energy(sample)])
-    pdf_results = pd.DataFrame
+    pdf_results = pd.DataFrame(results)
 
+    for i in range(num_cases):
+        x = pdf_results.loc[pdf_results.loc[pdf_results['case']==1]['z'].idxmax()].z
 
         positions.append(
             (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
