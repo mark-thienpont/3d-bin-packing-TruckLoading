@@ -136,30 +136,28 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
         cqm.add_constraint(sum([vars.P[i,x,y,z] for i in range(num_cases)]) <= 1,
                            label=f'constraint2_{x}_{y}_{z}')
 
-    ## Constraint 3 : make sure the case is in cuboid shape, also taken rotation into account
-    #for i in range(num_cases):
-    #    for y, z in [(y,z) for y in range(bins.width) for z in range(bins.height)]:
-    #        cqm.add_constraint(
-    #            
-    #            sum([vars.P[i,x,y,z] for x in range(bins.length)]) *
-    #            (sum([vars.P[i,x,y,z] for x in range(bins.length)]) - cases.length[i] * vars.R[i]
-    #                                                                - cases.width[i]  * (1 - vars.R[i])) == 0,
-    #                        label=f'constraint3x_{i}_{y}_{z}')  
+    # Constraint 3 : make sure the case is in cuboid shape, also taken rotation into account
+    for i in range(num_cases):
+        #for x in range(bins.length):
+        #    # all slices for x (i.e. xy planes) for each of the items, need to have either 0 or either widht*height number of dots
+        #    # if rotated, this should be replaced with length*height
+        #    cqm.add_constraint( sum([vars.P[i,x,y,z] for y in range(bins.width)  for z in range(bins.height)]) 
+        #                       * ( sum([vars.P[i,x,y,z] for y, z in [(y,z) for y in range(bins.width) for z in range(bins.height)]])
+        #                        - cases.length[i] * cases.height[i] * vars.R[i] - cases.width[i] * cases.height[i] * (1 - vars.R[i])) == 0,
+        #                    label=f'constraint3x_{i}_{x}')  
 
-    #    for x, z in [(x,z) for x in range(bins.length) for z in range(bins.height)]:
-    #        cqm.add_constraint(
-    #            
-    #            sum([vars.P[i,x,y,z] for y in range(bins.width)]) *
-    #            (sum([vars.P[i,x,y,z] for y in range(bins.width)]) - cases.width[i]  * vars.R[i]
-    #                                                               - cases.length[i] * (1 - vars.R[i])) == 0,
-    #                        label=f'constraint3y_{i}_{x}_{z}')  
-
-    #    for x, y in [(x,y) for x in range(bins.length) for y in range(bins.width)]:
-    #        cqm.add_constraint(
-    #            
-    #            sum([vars.P[i,x,y,z] for z in range(bins.height)]) *
-    #            (sum([vars.P[i,x,y,z] for z in range(bins.height)]) - cases.height[i]) == 0,
-    #                        label=f'constraint3z_{i}_{x}_{y}')                                  
+        for y in range(bins.width):
+            cqm.add_constraint( sum([vars.P[i,x,y,z] for x in range(bins.length)  for z in range(bins.height)]) 
+                               * ( sum([vars.P[i,x,y,z] for x, z in [(x,z) for x in range(bins.length) for z in range(bins.height)]])
+                                - cases.width[i] * cases.height[i] * vars.R[i] - cases.length[i] * cases.height[i] * (1 - vars.R[i])) == 0,
+                            label=f'constraint3y_{i}_{y}')  
+        
+        #for z in range(bins.height):
+        #    # here rotation is of no relevance
+        #    cqm.add_constraint( sum([vars.P[i,x,y,z] for x in range(bins.length)  for y in range(bins.width)]) 
+        #                       * ( sum([vars.P[i,x,y,z] for x, y in [(x,y) for x in range(bins.length) for y in range(bins.width)]])
+        #                        - cases.length[i] * cases.width[i]) == 0,
+        #                    label=f'constraint3z_{i}_{z}')                          
 
 #def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
 #                              bins: Bins, cases: Cases,
@@ -264,16 +262,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_filepath", type=str, nargs="?",
                         help="Filename with path to bin-packing data file.",
-                        default="input/LoadList_4.csv")
+                        default="input/LoadListG20_2_in.csv")
     
     parser.add_argument("--output_filepath", type=str,  nargs="?",
                         help="Path for the output solution file.",
-                        default=None)
+                        default="output/LoadListG20_2_out.csv")
 
     parser.add_argument("--time_limit", type=float, nargs="?",
                         help="Time limit for the hybrid CQM Solver to run in"
                              " seconds.",
-                        default=5)
+                        default=30)
     
     parser.add_argument("--use_cqm_solver", type=bool, nargs="?",
                         help="Flag to either use CQM or MIP solver",
@@ -310,21 +308,21 @@ if __name__ == '__main__':
         write_solution_to_file(output_filepath, cqm, vars, best_feasible, 
                                cases, bins, effective_dimensions)
 
-    positions = []
-    sizes = []
-    results = []
-    for i, x, y, z in [(i,x,y,z) for i in range(num_cases) for x in bins.length for y in bins.width for z in bins.height]:
-        results.append([i, x, y, z, vars.P[i,x,y,z].energy(sample)])
-    pdf_results = pd.DataFrame(results)
+    #positions = []
+    #sizes = []
+    #results = []
+    #for i, x, y, z in [(i,x,y,z) for i in range(num_cases) for x in bins.length for y in bins.width for z in bins.height]:
+    #    results.append([i, x, y, z, vars.P[i,x,y,z].energy(sample)])
+    #pdf_results = pd.DataFrame(results)
 
-    for i in range(num_cases):
-        x = pdf_results.loc[pdf_results.loc[pdf_results['case']==1]['z'].idxmax()].z
+    #for i in range(num_cases):
+    #    x = pdf_results.loc[pdf_results.loc[pdf_results['case']==1]['z'].idxmax()].z
 
-        positions.append(
-            (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
-        sizes.append((cases.length[i],
-                      cases.width[i],
-                      cases.height[i]))
+    #    positions.append(
+    #        (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
+    #    sizes.append((cases.length[i],
+    #                  cases.width[i],
+    #                  cases.height[i]))
 
 #    fig = plot_cuboids(best_feasible, vars, cases,
 #                       bins, effective_dimensions, color_coded, positions, sizes)

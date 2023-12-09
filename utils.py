@@ -135,7 +135,7 @@ def _get_colors(case_ids: np.array) -> list:
 
 def plot_cuboids(sample: dimod.SampleSet, vars: "Variables",
                  cases: "Cases", bins: "Bins", effective_dimensions: list,
-                 color_coded: bool = True, positions: list, sizes: list) -> go.Figure:
+                 color_coded: bool = True, positions: list = [], sizes: list = []) -> go.Figure:
     """Visualization utility tool to view 3D bin packing solution.
 
     Args:
@@ -153,8 +153,8 @@ def plot_cuboids(sample: dimod.SampleSet, vars: "Variables",
     dx, dy, dz, x2, y2, z2 = effective_dimensions
     num_cases = cases.num_cases
     num_bins = bins.num_bins
-    #positions = []
-    #sizes = []
+    positions = []
+    sizes = []
     #for i in range(num_cases):
     #    positions.append(
     #        (vars.x[i].energy(sample), vars.y[i].energy(sample),
