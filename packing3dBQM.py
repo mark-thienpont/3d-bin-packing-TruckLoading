@@ -1,24 +1,13 @@
-# Copyright 2022 D-Wave Systems Inc.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-
 import argparse
+import dimod
 from dimod import quicksum, ConstrainedQuadraticModel, Real, Binary, SampleSet, Integer
 from dwave.system import LeapHybridCQMSampler
 from itertools import combinations, permutations
 import numpy as np
 from typing import Tuple
 import pandas as pd
+
+from hybrid.reference.kerberos import KerberosSampler
 
 from utils import print_cqm_stats, plot_cuboids
 from utils import read_instance, write_solution_to_file
@@ -76,46 +65,8 @@ class Variables:
                                                     for y in range(bins.width)
                                                     for z in range(bins.height)}  
 
-        # Rotation
+        # Rotation : skipped for now
         self.R = {i        : Binary(f'r_{i}') for i in range(num_cases)}                                                      
-
-#def _initialisation_constraints(cqm: ConstrainedQuadraticModel,
-#                                 vars: Variables, cases: Cases) -> list:
-
-#    cqm.add_constraint( vars.x[0] == 0, label=f'x_{0}') 
-#    cqm.add_constraint( vars.y[0] == 0, label=f'y_{0}') 
-#    cqm.add_constraint( vars.z[0] == 0, label=f'z_{0}') 
-
-
-#def _add_orientation_constraints(cqm: ConstrainedQuadraticModel,
-#                                 vars: Variables, cases: Cases) -> list:
-#    num_cases = cases.num_cases
-#    dx = {}
-#    dy = {}
-#    dz = {}
-#    x2 = {}
-#    y2 = {}
-#    z2 = {}
-#    for i in range(num_cases):
-#        p1 = list(
-#            permutations([cases.length[i], cases.width[i], cases.height[i]]))
-#        dx[i] = 0
-#        dy[i] = 0
-#        dz[i] = 0
-#        for j, (a, b, c) in enumerate(p1):
-#            if (j == 0 or j == 2):      # only rotations around z-axis is potentially feasible in all our cases
-#                dx[i] += a * vars.o[i, j]
-#                dy[i] += b * vars.o[i, j]
-#                dz[i] += c * vars.o[i, j]
-#        x2[i] = vars.x[i] + dx[i]
-#        y2[i] = vars.y[i] + dy[i]
-#        z2[i] = vars.z[i] + dz[i]
-#
-#    for i in range(num_cases):
-#        cqm.add_discrete(quicksum([vars.o[i, k] for k in [0,2]]),
-#                         label=f'orientation_{i}')
-#    return [dx, dy, dz, x2, y2, z2]
-
 
 def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
                                bins: Bins, cases: Cases,
@@ -126,54 +77,41 @@ def _add_geometric_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
 
     # Constraint 1 : each case need to be packed in the bin
     for i in range(num_cases): 
-        cqm.add_constraint(sum([vars.P[i,x,y,z] for x in range(bins.length) 
-                                                for y in range(bins.width) 
-                                                for z in range(bins.height)]) - cases.length[i] * cases.width[i] * cases.height[i] == 0,
+        cqm.add_constraint(quicksum([vars.P[i,x,y,z] for x in range(bins.length) 
+                                                        for y in range(bins.width) 
+                                                        for z in range(bins.height)]) - cases.length[i] * cases.width[i] * cases.height[i] == 0,
                            label=f'constraint1_{i}')
 
     # Constraint 2 : each position can not be filled with more than 1 case
     for x, y, z in [(x,y,z) for x in range(bins.length) for y in range(bins.width) for z in range(bins.height)]:
-        cqm.add_constraint(sum([vars.P[i,x,y,z] for i in range(num_cases)]) <= 1,
+        cqm.add_constraint(quicksum([vars.P[i,x,y,z] for i in range(num_cases)]) <= 1,
                            label=f'constraint2_{x}_{y}_{z}')
 
     # Constraint 3 : make sure the case is in cuboid shape, also taken rotation into account
     for i in range(num_cases):
-        #for x in range(bins.length):
-        #    # all slices for x (i.e. xy planes) for each of the items, need to have either 0 or either widht*height number of dots
-        #    # if rotated, this should be replaced with length*height
-        #    cqm.add_constraint( sum([vars.P[i,x,y,z] for y in range(bins.width)  for z in range(bins.height)]) 
-        #                       * ( sum([vars.P[i,x,y,z] for y, z in [(y,z) for y in range(bins.width) for z in range(bins.height)]])
-        #                        - cases.length[i] * cases.height[i] * vars.R[i] - cases.width[i] * cases.height[i] * (1 - vars.R[i])) == 0,
-        #                    label=f'constraint3x_{i}_{x}')  
+        for x in range(bins.length):
+            # all slices for x (i.e. xy planes) for each of the items, need to have either 0 or either widht*height number of dots
+            # if rotated, this should be replaced with length*height
+            cqm.add_constraint( quicksum([vars.P[i,x,y,z] for y in range(bins.width)  for z in range(bins.height)]) 
+                               * ( cases.length[i] * cases.height[i] * vars.R[i] - cases.width[i] * cases.height[i] * (1 - vars.R[i]) - 
+                                  quicksum([vars.P[i,x,y,z] for y, z in [(y,z) for y in range(bins.width) for z in range(bins.height)]])
+                                  ) == 0,
+                            label=f'constraint3x_{i}_{x}')  
 
         for y in range(bins.width):
             cqm.add_constraint( quicksum([vars.P[i,x,y,z] for x in range(bins.length)  for z in range(bins.height)]) 
-                               * ( quicksum([vars.P[i,x,y,z] for x, z in [(x,z) for x in range(bins.length) for z in range(bins.height)]])
-                                - cases.width[i] * cases.height[i] * vars.R[i] - cases.length[i] * cases.height[i] * (1 - vars.R[i])) == 0,
+                               * ( cases.width[i] * cases.height[i] * vars.R[i] - cases.length[i] * cases.height[i] * (1 - vars.R[i]) - 
+                                  quicksum([vars.P[i,x,y,z] for x, z in [(x,z) for x in range(bins.length) for z in range(bins.height)]])
+                                  ) == 0,
                             label=f'constraint3y_{i}_{y}')  
         
-        #for z in range(bins.height):
-        #    # here rotation is of no relevance
-        #    cqm.add_constraint( sum([vars.P[i,x,y,z] for x in range(bins.length)  for y in range(bins.width)]) 
-        #                       * ( sum([vars.P[i,x,y,z] for x, y in [(x,y) for x in range(bins.length) for y in range(bins.width)]])
-        #                        - cases.length[i] * cases.width[i]) == 0,
-        #                    label=f'constraint3z_{i}_{z}')                          
-
-#def _add_boundary_constraints(cqm: ConstrainedQuadraticModel, vars: Variables,
-#                              bins: Bins, cases: Cases,
-#                              effective_dimensions: list):
-#    num_cases = cases.num_cases
-#    dx, dy, dz, x2, y2, z2 = effective_dimensions
-#    for i in range(num_cases):
-#
-#        cqm.add_constraint(vars.x[i] + dx[i] - bins.length <= 0,
-#                            label=f'maxx_{i}_less')
-#
-#        cqm.add_constraint(vars.y[i] + dy[i] - bins.width <= 0,
-#                            label=f'maxy_{i}_less')
-#
-#        cqm.add_constraint(vars.z[i] + dz[i] - bins.height <= 0,
-#                            label=f'maxx_height_{i}')                            
+        for z in range(bins.height):
+            # here rotation is of no relevance
+            cqm.add_constraint( quicksum([vars.P[i,x,y,z] for x in range(bins.length)  for y in range(bins.width)]) 
+                               * ( cases.length[i] * cases.width[i] - 
+                                  quicksum([vars.P[i,x,y,z] for x, y in [(x,y) for x in range(bins.length) for y in range(bins.width)]])
+                                  ) == 0,
+                            label=f'constraint3z_{i}_{z}')                           
 
 #def _define_objective(cqm: ConstrainedQuadraticModel, vars: Variables,
 #                      bins: Bins, cases: Cases, effective_dimensions: list):
@@ -213,8 +151,6 @@ def build_cqm(vars: Variables, bins: Bins,
     
     """
     cqm = ConstrainedQuadraticModel()
- #   _initialisation_constraints(cqm, vars, cases)
- #   effective_dimensions = _add_orientation_constraints(cqm, vars, cases)
     effective_dimensions =[0, 0, 0, 0, 0, 0]  # just to keep my code running (16/11/2023)
     _add_geometric_constraints(cqm, vars, bins, cases, effective_dimensions)
  #   _add_boundary_constraints(cqm, vars, bins, cases, effective_dimensions)
@@ -302,32 +238,32 @@ if __name__ == '__main__':
 
     print_cqm_stats(cqm)
 
-    best_feasible = call_solver(cqm, time_limit, use_cqm_solver)
+    bqm = dimod.BinaryQuadraticModel('BINARY')
+    bqm.offset = cqm.objective.offset
+    bqm.add_linear_from(cqm.objective.linear)
+    bqm.add_quadratic_from(cqm.objective.quadratic)
+    for c in cqm.constraints.values():
+        bqm += c.lhs
+    
+    energy_threshold = None
+    #solution = KerberosSampler().sample(bqm, max_iter=10, convergence=3,
+    #                                    energy_threshold=energy_threshold)
 
-    if output_filepath is not None:
-        write_solution_to_file(output_filepath, cqm, vars, best_feasible, 
-                               cases, bins, effective_dimensions)
+    kerberos_sampler = KerberosSampler() 
+    solution = kerberos_sampler.sample(bqm, 
+                                    #qpu_sampler=qpu_sampler, 
+                                    #qpu_reads=10000, 
+                                    max_iter=10,
+                                    convergence=3
+                                    #qpu_params={'label': 'Notebook - Feature Selection'}
+                                    )
+    best = solution.first.sample
+    energy = solution.first.energy
 
-    #positions = []
-    #sizes = []
-    #results = []
-    #for i, x, y, z in [(i,x,y,z) for i in range(num_cases) for x in bins.length for y in bins.width for z in bins.height]:
-    #    results.append([i, x, y, z, vars.P[i,x,y,z].energy(sample)])
-    #pdf_results = pd.DataFrame(results)
 
-    #for i in range(num_cases):
-    #    x = pdf_results.loc[pdf_results.loc[pdf_results['case']==1]['z'].idxmax()].z
 
-    #    positions.append(
-    #        (vars.x[i].energy(sample), vars.y[i].energy(sample), vars.z[i].energy(sample)))
-    #    sizes.append((cases.length[i],
-    #                  cases.width[i],
-    #                  cases.height[i]))
+    #best_feasible = call_solver(cqm, time_limit, use_cqm_solver)
 
-#    fig = plot_cuboids(best_feasible, vars, cases,
-#                       bins, effective_dimensions, color_coded, positions, sizes)
-#
-#    if html_filepath is not None:
-#        fig.write_html(html_filepath)
-#
-#    fig.show()
+    #if output_filepath is not None:
+    #    write_solution_to_file(output_filepath, cqm, vars, best_feasible, 
+    #                           cases, bins, effective_dimensions)

@@ -90,7 +90,7 @@ if run_type == "File upload":
     problem_filepath = st.sidebar.text_input(label="Problem instance file",
                                              value="input/LoadListG20_5_in.csv")
     time_limit = st.sidebar.number_input(label="Hybrid solver time limit (S)",
-                                         value=5)
+                                         value=30)
 
     color_coded = True
     display_input = False
