@@ -5,11 +5,11 @@ from dwave.system import LeapHybridCQMSampler
 
 from utils import print_cqm_stats
 
-bin = pd.DataFrame(data = [[5,5,5]], columns=['length', 'width', 'height'])
+bin = pd.DataFrame(data = [[3,3,3]], columns=['length', 'width', 'height'])
 item_data = []
 item_data.append([1,1,1])
 item_data.append([2,2,2])
-item_data.append([3,3,3])
+#item_data.append([3,3,3])
 item = pd.DataFrame(data = item_data, columns=['length', 'width', 'height'])
 
 total_item_volume = quicksum([item.iloc[i].length * item.iloc[i].width * item.iloc[i].height for i in range(len(item))])
@@ -46,8 +46,8 @@ NEz = {(i,x,y,z): Binary(f'NEz_{i,x,y,z}') for i in range(len(item))
                                          for y in range(1,bin.iloc[0].width+2)
                                          for z in range(1,bin.iloc[0].height+2)} 
 
-# Supportive positions ==> stut-constraints in zowel z als x richting
-# not yet for now   
+## Stutted in z-direction
+#Sz = {(i): Integer(f'Sz_{i}') for i in range(len(item))} 
 
 # Constraint 1a : each case need to be packed in the bin
 for i in range(len(item)): 
@@ -78,14 +78,14 @@ for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) for y in range(1,bi
                      label=f'constraint2a_{x}_{y}_{z}')
 
 # Constraint 2b : 0-line added to enable stutting-constraints
-cqm.add_constraint(quicksum([T[0,y,z] for y in range(bin.iloc[0].width+1) 
-                                      for z in range(bin.iloc[0].height+1)] ) == 0,
+cqm.add_constraint(quicksum([T[0,y,z] for y in range(1,bin.iloc[0].width+1) 
+                                      for z in range(1,bin.iloc[0].height+1)] ) == (bin.iloc[0].width)*(bin.iloc[0].height),
                     label=f'constraint2b_x')
 cqm.add_constraint(quicksum([T[x,0,z] for x in range(bin.iloc[0].length+1) 
                                       for z in range(bin.iloc[0].height+1)] ) == 0,
                     label=f'constraint2b_y')
-cqm.add_constraint(quicksum([T[x,y,0] for x in range(bin.iloc[0].length+1) 
-                                      for y in range(bin.iloc[0].width+1)] ) == 0,
+cqm.add_constraint(quicksum([T[x,y,0] for x in range(1,bin.iloc[0].length+1) 
+                                      for y in range(1,bin.iloc[0].width+1)] ) == (bin.iloc[0].width)*(bin.iloc[0].length),
                     label=f'constraint2b_z')    
 
 # Constraint 3 : items are not overlapping (via "sum of all dots in T = known sum of dots of all items"
@@ -128,12 +128,28 @@ for i in range(len(item)):
                                             for z in range(1,bin.iloc[0].height+2)]) == 2*item.iloc[i].length*item.iloc[i].width,
                      label=f'constraint5_z_{i}')
 
-
-
-
+### Constraint 6 : each item is stutted along the z-axis for at least 98% of its bottom surface
+for i in range(len(item)): 
+  cqm.add_constraint(quicksum([P[i,x,y,z] * T[x,y,z-1]  
+                                            for x in range(1,bin.iloc[0].length+1)
+                                            for y in range(1,bin.iloc[0].width+1)
+                                            for z in range(1,bin.iloc[0].height+1)]) 
+                    - (item.iloc[i].height - 1) * item.iloc[i].length * item.iloc[i].width
+                    - 0.98 * item.iloc[i].length * item.iloc[i].width >= 0,    
+                     label=f'constraint6_{i}')
+  
+### Constraint 7 : each item is stutted along the x-axis for at least 40% of its front surface
+for i in range(len(item)): 
+  cqm.add_constraint(quicksum([P[i,x,y,z] * T[x-1,y,z]  
+                                            for x in range(1,bin.iloc[0].length+1)
+                                            for y in range(1,bin.iloc[0].width+1)
+                                            for z in range(1,bin.iloc[0].height+1)]) 
+                    - (item.iloc[i].length - 1) * item.iloc[i].width * item.iloc[i].height
+                    - 0.40 * item.iloc[i].width * item.iloc[i].height >= 0,    
+                     label=f'constraint7_{i}')  
 
 sampler = LeapHybridCQMSampler()
-time_limit = 20
+time_limit = 15
 res = sampler.sample_cqm(cqm, time_limit=time_limit, label='3d bin packing')
 
 print_cqm_stats(cqm)
