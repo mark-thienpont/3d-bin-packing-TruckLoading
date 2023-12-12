@@ -41,13 +41,13 @@ for i in range(len(item)):
 # Constraint 2 : each item is constructed from starting position and known dimensions
 # .... by consequence, no more need to check if it is contained inside the truck, or volume is complete etc
 for i in range(len(item)): 
-  for x,y,z in [(x,y,z) for x in range(item.iloc[0].length ,bin.iloc[0].length+1) 
-                        for y in range(item.iloc[0].width  ,bin.iloc[0].width+1) 
-                        for z in range(item.iloc[0].height ,bin.iloc[0].height+1)]:
+  for x,y,z in [(x,y,z) for x in range(item.iloc[i].length ,bin.iloc[0].length+1) 
+                        for y in range(item.iloc[i].width  ,bin.iloc[0].width+1) 
+                        for z in range(item.iloc[i].height ,bin.iloc[0].height+1)]:
     cqm.add_constraint(P[i,x,y,z,0] - quicksum([P[i,x-dx,y-dy,z-dz,1] 
-                                                             for dx in range(0,item.iloc[0].length) 
-                                                             for dy in range(0,item.iloc[0].width ) 
-                                                             for dz in range(0,item.iloc[0].height)]) == 0,
+                                                             for dx in range(0,item.iloc[i].length) 
+                                                             for dy in range(0,item.iloc[i].width ) 
+                                                             for dz in range(0,item.iloc[i].height)]) == 0,
                       label=f'constraint2_{i}_{x}_{y}_{z}')
 
 # Constraint 3 : derive T[x,y,z] from P[i,x,y,z]
