@@ -5,11 +5,11 @@ from dwave.system import LeapHybridCQMSampler
 
 from utils import print_cqm_stats
 
-bin = pd.DataFrame(data = [[3,3,3]], columns=['length', 'width', 'height'])
+bin = pd.DataFrame(data = [[5,5,5]], columns=['length', 'width', 'height'])
 item_data = []
 item_data.append([1,1,1])
+item_data.append([3,3,3])
 item_data.append([2,2,2])
-#item_data.append([3,3,3])
 item = pd.DataFrame(data = item_data, columns=['length', 'width', 'height'])
 
 total_item_volume = quicksum([item.iloc[i].length * item.iloc[i].width * item.iloc[i].height for i in range(len(item))])
@@ -45,9 +45,6 @@ NEz = {(i,x,y,z): Binary(f'NEz_{i,x,y,z}') for i in range(len(item))
                                          for x in range(1,bin.iloc[0].length+2)
                                          for y in range(1,bin.iloc[0].width+2)
                                          for z in range(1,bin.iloc[0].height+2)} 
-
-## Stutted in z-direction
-#Sz = {(i): Integer(f'Sz_{i}') for i in range(len(item))} 
 
 # Constraint 1a : each case need to be packed in the bin
 for i in range(len(item)): 
@@ -149,7 +146,7 @@ for i in range(len(item)):
                      label=f'constraint7_{i}')  
 
 sampler = LeapHybridCQMSampler()
-time_limit = 15
+time_limit = 60
 res = sampler.sample_cqm(cqm, time_limit=time_limit, label='3d bin packing')
 
 print_cqm_stats(cqm)
