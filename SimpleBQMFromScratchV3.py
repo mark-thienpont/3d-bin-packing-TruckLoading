@@ -6,34 +6,12 @@ from hybrid.reference.kerberos import KerberosSampler
 
 from utils import print_cqm_stats
 
-def get_bqm(cqm: dimod.ConstrainedQuadraticModel, penalty=2.0):
-    """Create a BQM object from a CQM assuming that only linear equality
-    constraints are present.
-
-    Args:
-        cqm: The dimod.ConstrainedQuadraticModel
-        penalty (float): The strength of penalty coefficient for all the
-            equality constraints
-
-    Returns:
-        `dimod.BinaryQuadraticModel`: A BQM model in which the equality
-            constraints are converted to a quadratic objective.
-
-    """
-    bqm = dimod.BinaryQuadraticModel('BINARY')
-    bqm.offset = cqm.objective.offset
-    bqm.add_linear_from(cqm.objective.linear)
-    bqm.add_quadratic_from(cqm.objective.quadratic)
-    for c in cqm.constraints.values():
-        bqm += penalty * (c.lhs - c.rhs) ** 2
-    return bqm
-
-bin = pd.DataFrame(data = [[5,5,5]], columns=['length', 'width', 'height'])
+bin = pd.DataFrame(data = [[3,3,3]], columns=['length', 'width', 'height'])
 
 item_data = []
 item_data.append([1,1,1])
 item_data.append([2,2,2])
-item_data.append([2,2,2])
+#item_data.append([2,2,2])
 #item_data.append([3,2,3])
 #item_data.append([3,3,3])
 item = pd.DataFrame(data = item_data, columns=['length', 'width', 'height'])
@@ -156,57 +134,57 @@ for i in range(len(item)):
                                                              for dz in range(0,z)]) == 0,
                       label=f'constraint2h_{i}_{x}_{y}_{z}')
 
-# Constraint 2c : each items has exactly the predefined number of dots
-for i in range(len(item)): 
-  cqm.add_constraint(quicksum([P[i,x,y,z,0] for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) 
-                                                                  for y in range(1,bin.iloc[0].width+1) 
-                                                                  for z in range(1,bin.iloc[0].height+1)]]) 
-                              - item.iloc[i].length*item.iloc[i].width*item.iloc[i].height == 0,
-                      label=f'constraint2c_{i}')
+## Constraint 2c : each items has exactly the predefined number of dots
+#for i in range(len(item)): 
+#  cqm.add_constraint(quicksum([P[i,x,y,z,0] for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) 
+#                                                                  for y in range(1,bin.iloc[0].width+1) 
+#                                                                  for z in range(1,bin.iloc[0].height+1)]]) 
+#                              - item.iloc[i].length*item.iloc[i].width*item.iloc[i].height == 0,
+#                      label=f'constraint2c_{i}')
 
-# Constraint 3 : derive T[x,y,z] from P[i,x,y,z]
-for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) for y in range(1,bin.iloc[0].width+1) for z in range(1,bin.iloc[0].height+1)]:
-  cqm.add_constraint(quicksum([P[i,x,y,z,0] for i in range(len(item))]) - T[x,y,z] == 0,
-                     label=f'constraint3_{x}_{y}_{z}')
+## Constraint 3 : derive T[x,y,z] from P[i,x,y,z]
+#for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) for y in range(1,bin.iloc[0].width+1) for z in range(1,bin.iloc[0].height+1)]:
+#  cqm.add_constraint(quicksum([P[i,x,y,z,0] for i in range(len(item))]) - T[x,y,z] == 0,
+#                     label=f'constraint3_{x}_{y}_{z}')
 
-# Constraint 4 : items are not overlapping (via "sum of all dots in T = known sum of dots of all items"
-cqm.add_constraint(quicksum([T[x,y,z] for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) 
-                                                            for y in range(1,bin.iloc[0].width+1) 
-                                                            for z in range(1,bin.iloc[0].height+1)]]) 
-                   - total_item_volume == 0,
-                    label=f'constraint4')
+## Constraint 4 : items are not overlapping (via "sum of all dots in T = known sum of dots of all items"
+#cqm.add_constraint(quicksum([T[x,y,z] for x,y,z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) 
+#                                                            for y in range(1,bin.iloc[0].width+1) 
+#                                                            for z in range(1,bin.iloc[0].height+1)]]) 
+#                   - total_item_volume == 0,
+#                    label=f'constraint4')
 
-# Constraint 5 : 0-line added to enable stutting-constraints
-cqm.add_constraint(quicksum([T[0,y,z] for y in range(1,bin.iloc[0].width+1) 
-                                      for z in range(1,bin.iloc[0].height+1)] ) == (bin.iloc[0].width)*(bin.iloc[0].height),
-                    label=f'constraint5_x')
-cqm.add_constraint(quicksum([T[x,0,z] for x in range(bin.iloc[0].length+1) 
-                                      for z in range(bin.iloc[0].height+1)] ) == 0,
-                    label=f'constraint5_y')
-cqm.add_constraint(quicksum([T[x,y,0] for x in range(1,bin.iloc[0].length+1) 
-                                      for y in range(1,bin.iloc[0].width+1)] ) == (bin.iloc[0].width)*(bin.iloc[0].length),
-                    label=f'constraint5_z')    
+## Constraint 5 : 0-line added to enable stutting-constraints
+#cqm.add_constraint(quicksum([T[0,y,z] for y in range(1,bin.iloc[0].width+1) 
+#                                      for z in range(1,bin.iloc[0].height+1)] ) - (bin.iloc[0].width)*(bin.iloc[0].height) == 0,
+#                    label=f'constraint5_x')
+#cqm.add_constraint(quicksum([T[x,0,z] for x in range(bin.iloc[0].length+1) 
+#                                      for z in range(bin.iloc[0].height+1)] ) == 0,
+#                    label=f'constraint5_y')
+#cqm.add_constraint(quicksum([T[x,y,0] for x in range(1,bin.iloc[0].length+1) 
+#                                      for y in range(1,bin.iloc[0].width+1)] ) - (bin.iloc[0].width)*(bin.iloc[0].length) == 0,
+#                    label=f'constraint5_z')    
 
 
-### Constraint 6 : each item is stutted along the z-axis for at least 98% of its bottom surface
-for i in range(len(item)): 
-  cqm.add_constraint(quicksum([P[i,x,y,z,0] * T[x,y,z-1]  
-                                            for x in range(1,bin.iloc[0].length+1)
-                                            for y in range(1,bin.iloc[0].width+1)
-                                            for z in range(1,bin.iloc[0].height+1)]) 
-                    - (item.iloc[i].height - 1) * item.iloc[i].length * item.iloc[i].width
-                    - 0.98 * item.iloc[i].length * item.iloc[i].width >= 0,    
-                     label=f'constraint6_{i}')
+#### Constraint 6 : each item is stutted along the z-axis for at least 98% of its bottom surface
+#for i in range(len(item)): 
+#  cqm.add_constraint(quicksum([P[i,x,y,z,0] * T[x,y,z-1]  
+#                                            for x in range(1,bin.iloc[0].length+1)
+#                                            for y in range(1,bin.iloc[0].width+1)
+#                                            for z in range(1,bin.iloc[0].height+1)]) 
+#                    - (item.iloc[i].height - 1) * item.iloc[i].length * item.iloc[i].width
+#                    - 0.98 * item.iloc[i].length * item.iloc[i].width >= 0,    
+#                     label=f'constraint6_{i}')
   
-### Constraint 7 : each item is stutted along the x-axis for at least 40% of its front surface
-for i in range(len(item)): 
-  cqm.add_constraint(quicksum([P[i,x,y,z,0] * T[x-1,y,z]  
-                                            for x in range(1,bin.iloc[0].length+1)
-                                            for y in range(1,bin.iloc[0].width+1)
-                                            for z in range(1,bin.iloc[0].height+1)]) 
-                    - (item.iloc[i].length - 1) * item.iloc[i].width * item.iloc[i].height
-                    - 0.40 * item.iloc[i].width * item.iloc[i].height >= 0,    
-                     label=f'constraint7_{i}')  
+#### Constraint 7 : each item is stutted along the x-axis for at least 40% of its front surface
+#for i in range(len(item)): 
+#  cqm.add_constraint(quicksum([P[i,x,y,z,0] * T[x-1,y,z]  
+#                                            for x in range(1,bin.iloc[0].length+1)
+#                                            for y in range(1,bin.iloc[0].width+1)
+#                                            for z in range(1,bin.iloc[0].height+1)]) 
+#                    - (item.iloc[i].length - 1) * item.iloc[i].width * item.iloc[i].height
+#                    - 0.40 * item.iloc[i].width * item.iloc[i].height >= 0,    
+#                     label=f'constraint7_{i}')  
 
 # Objective 
 
@@ -214,56 +192,47 @@ target_X = bin.iloc[0].length / 2
 target_Y = bin.iloc[0].width  / 2
 target_Z = 0
 
-obj_COG_X = (((quicksum(T[x,y,z] * X.iloc[x].X
-                                    for x in range(1,bin.iloc[0].length+1)
-                                    for y in range(1,bin.iloc[0].width+1)
-                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_X) ** 2 ) 
+#obj_COG_X = (((quicksum(T[x,y,z] * X.iloc[x].X
+#                                    for x in range(1,bin.iloc[0].length+1)
+#                                    for y in range(1,bin.iloc[0].width+1)
+#                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_X) ** 2 ) 
 
-obj_COG_Y = (((quicksum((T[x,y,z] * Y.iloc[y].Y) 
-                                    for x in range(1,bin.iloc[0].length+1)
-                                    for y in range(1,bin.iloc[0].width+1)
-                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_Y) ** 2 ) 
-obj_COG_Z = (((quicksum((T[x,y,z] * Z.iloc[z].Z) 
-                                    for x in range(1,bin.iloc[0].length+1)
-                                    for y in range(1,bin.iloc[0].width+1)
-                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_Z) ** 2 ) 
+#obj_COG_Y = (((quicksum((T[x,y,z] * Y.iloc[y].Y) 
+#                                    for x in range(1,bin.iloc[0].length+1)
+#                                    for y in range(1,bin.iloc[0].width+1)
+#                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_Y) ** 2 ) 
+#obj_COG_Z = (((quicksum((T[x,y,z] * Z.iloc[z].Z) 
+#                                    for x in range(1,bin.iloc[0].length+1)
+#                                    for y in range(1,bin.iloc[0].width+1)
+#                                    for z in range(1,bin.iloc[0].height+1)) / total_item_volume ) - target_Z) ** 2 ) 
 
-X_obj_coefficient = 1
-Y_obj_coefficient = 1
-Z_obj_coefficient = 1
+#X_obj_coefficient = 1
+#Y_obj_coefficient = 1
+#Z_obj_coefficient = 1
 
-cqm.set_objective(X_obj_coefficient * obj_COG_X +
-                  Y_obj_coefficient * obj_COG_Y +
-                  Z_obj_coefficient * obj_COG_Z) 
+#cqm.set_objective(X_obj_coefficient * obj_COG_X +
+#                  Y_obj_coefficient * obj_COG_Y +
+#                  Z_obj_coefficient * obj_COG_Z) 
 
-
-#### BQM : just checking to get this to work
-#bqm = get_bqm(cqm = cqm)
-
-#kerberos_sampler = KerberosSampler() 
-#solution = kerberos_sampler.sample(bqm, 
-#                                #qpu_sampler=qpu_sampler, 
-#                                #qpu_reads=10000, 
-#                                max_iter=10,
-#                                convergence=3
-#                                #qpu_params={'label': 'Notebook - Feature Selection'}
-#                                )
-#best = solution.first.sample
-#energy = solution.first.energy
-#################################################################################
-
-sampler = LeapHybridCQMSampler()
-time_limit = 15
-res = sampler.sample_cqm(cqm, time_limit=time_limit, label='3d bin packing')
 
 print_cqm_stats(cqm)
 
-res.resolve()
-feasible_sampleset = res.filter(lambda d: d.is_feasible)
-#print(feasible_sampleset)
+####### convert to BQM   ###########
+
+bqm, invert = dimod.cqm_to_bqm(cqm)
+
+kerberos_sampler = KerberosSampler() 
+solution = kerberos_sampler.sample(bqm, 
+                                #qpu_sampler=qpu_sampler, 
+                                #qpu_reads=10000, 
+                                max_iter=10,
+                                convergence=3
+                                #qpu_params={'label': 'Notebook - Feature Selection'}
+                                )
+best = invert(solution.first.sample)
+
 try:
-    best_feasible = feasible_sampleset.first.sample
-    #print(best_feasible)
+    #best_feasible = feasible_sampleset.first.sample
     print('t', bin.iloc[0].length*bin.iloc[0].width*bin.iloc[0].height, total_item_volume, bin.iloc[0].length, bin.iloc[0].width, bin.iloc[0].height )
 
     COG_X_teller = 0
@@ -282,7 +251,7 @@ try:
 
 
       for x, y, z in [(x,y,z) for x in range(1,bin.iloc[0].length+1) for y in range(1,bin.iloc[0].width+1) for z in range(1,bin.iloc[0].height+1)]:
-        if P[i,x,y,z,0].energy(best_feasible) == 1:
+        if best["""P_({i}, {x}, {y}, {z}, 0)""".format(i=i,x=x,y=y,z=z)] == 1:
           dots += 1
           COG_X_teller += x
           COG_Y_teller += y
